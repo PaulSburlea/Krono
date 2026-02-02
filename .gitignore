@@ -56,3 +56,5 @@ pubspec.lock
 
 # OS
 Thumbs.db
+
+lib/firebase_options.dart
