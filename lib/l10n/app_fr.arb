@@ -195,5 +195,12 @@
   "privacyPolicy": "Politique de Confidentialité",
   "sendFeedback": "Envoyer un avis",
   "feedbackSubject": "Avis Krono",
-  "deviceInfo": "Infos Appareil"
+  "deviceInfo": "Infos Appareil",
+
+  "onboardingSkip": "Passer",
+  "onboardingStart": "Commencer",
+  "onboardingTitle1": "Votre vie en photos",
+  "onboardingDesc1": "Capturez une photo chaque jour. Construisez une chronologie de souvenirs à chérir pour toujours.",
+  "onboardingTitle2": "100% Privé et Hors ligne",
+  "onboardingDesc2": "Vos souvenirs restent sur votre appareil. Pas de suivi, pas de cloud, pas de collecte de données."
 }

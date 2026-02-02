@@ -442,4 +442,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deviceInfo => 'Device Info';
+
+  @override
+  String get onboardingSkip => 'Skip';
+
+  @override
+  String get onboardingStart => 'Get Started';
+
+  @override
+  String get onboardingTitle1 => 'Your Life in Photos';
+
+  @override
+  String get onboardingDesc1 => 'Capture one photo every day. Build a timeline of memories that you can cherish forever.';
+
+  @override
+  String get onboardingTitle2 => '100% Private & Offline';
+
+  @override
+  String get onboardingDesc2 => 'Your memories stay on your device. No tracking, no cloud uploads, no data collection.';
 }

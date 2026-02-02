@@ -195,5 +195,12 @@
   "privacyPolicy": "Privacy Policy",
   "sendFeedback": "Send Feedback",
   "feedbackSubject": "Krono Feedback",
-  "deviceInfo": "Device Info"
+  "deviceInfo": "Device Info",
+
+  "onboardingSkip": "Skip",
+  "onboardingStart": "Get Started",
+  "onboardingTitle1": "Your Life in Photos",
+  "onboardingDesc1": "Capture one photo every day. Build a timeline of memories that you can cherish forever.",
+  "onboardingTitle2": "100% Private & Offline",
+  "onboardingDesc2": "Your memories stay on your device. No tracking, no cloud uploads, no data collection."
 }

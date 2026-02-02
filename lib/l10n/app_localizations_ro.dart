@@ -442,4 +442,22 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get deviceInfo => 'Informații Dispozitiv';
+
+  @override
+  String get onboardingSkip => 'Sari peste';
+
+  @override
+  String get onboardingStart => 'Începe';
+
+  @override
+  String get onboardingTitle1 => 'Viața ta în fotografii';
+
+  @override
+  String get onboardingDesc1 => 'Surprinde o fotografie în fiecare zi. Construiește o cronologie a amintirilor pe care să le prețuiești mereu.';
+
+  @override
+  String get onboardingTitle2 => '100% Privat și Offline';
+
+  @override
+  String get onboardingDesc2 => 'Amintirile tale rămân pe dispozitivul tău. Fără urmărire, fără încărcări în cloud, fără colectare de date';
 }

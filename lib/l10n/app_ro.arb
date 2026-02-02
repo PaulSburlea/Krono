@@ -195,5 +195,12 @@
   "privacyPolicy": "Politică de Confidențialitate",
   "sendFeedback": "Trimite Feedback",
   "feedbackSubject": "Feedback Krono",
-  "deviceInfo": "Informații Dispozitiv"
+  "deviceInfo": "Informații Dispozitiv",
+
+  "onboardingSkip": "Sari peste",
+  "onboardingStart": "Începe",
+  "onboardingTitle1": "Viața ta în fotografii",
+  "onboardingDesc1": "Surprinde o fotografie în fiecare zi. Construiește o cronologie a amintirilor pe care să le prețuiești mereu.",
+  "onboardingTitle2": "100% Privat și Offline",
+  "onboardingDesc2": "Amintirile tale rămân pe dispozitivul tău. Fără urmărire, fără încărcări în cloud, fără colectare de date"
 }
