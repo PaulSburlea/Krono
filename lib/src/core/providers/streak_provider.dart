@@ -1,74 +1,121 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-// Model pentru a stoca cifra și istoricul de date
+import '../database/database.dart';
+import '../utils/logger_service.dart';
+
+/// Represents the calculated state of the user's activity streak.
+///
+/// This is an immutable data class that holds the result of the streak calculation,
+/// including the consecutive day count and the underlying activity dates.
 class StreakState {
+  /// The number of consecutive days of activity.
   final int count;
-  final List<DateTime> history;
-  StreakState(this.count, this.history);
+
+  /// The most recent date of any recorded activity. Can be null if no activity exists.
+  final DateTime? lastActivityDate;
+
+  /// A comprehensive, sorted list of all unique dates with recorded activity.
+  final List<DateTime> activeDates;
+
+  /// Creates an instance of the streak state.
+  const StreakState({
+    required this.count,
+    this.lastActivityDate,
+    this.activeDates = const [],
+  });
+
+  /// A factory for creating an initial, empty [StreakState].
+  factory StreakState.initial() =>
+      const StreakState(count: 0, activeDates: []);
 }
 
-final streakProvider = NotifierProvider<StreakNotifier, StreakState>(() {
-  return StreakNotifier();
+/// Provides a continuous stream of the user's activity log from the database.
+///
+/// This stream automatically emits a new list of [ActivityLogData] whenever
+/// the `activityLog` table is updated, ensuring reactive updates.
+final activityLogStreamProvider = StreamProvider<List<ActivityLogData>>((ref) {
+  final db = ref.watch(databaseProvider);
+  return (db.select(db.activityLog)).watch();
 });
 
-class StreakNotifier extends Notifier<StreakState> {
-  static const _keyStreak = 'current_streak_value';
-  static const _keyHistory = 'streak_history_dates';
+/// Provides a continuous stream of streak adjustments from the database.
+///
+/// These adjustments represent manually added days, such as from a streak
+/// restore feature, and are combined with the regular activity log.
+final streakAdjustmentsProvider =
+StreamProvider<List<StreakAdjustment>>((ref) {
+  final db = ref.watch(databaseProvider);
+  return (db.select(db.streakAdjustments)).watch();
+});
 
-  @override
-  StreakState build() {
-    _loadPersistedData();
-    return StreakState(0, []);
+/// The primary provider for calculating and exposing the user's activity streak.
+///
+/// This provider combines data from two sources: the [activityLogStreamProvider]
+/// (for regular daily entries) and the [streakAdjustmentsProvider] (for manual
+/// additions). It then computes the number of consecutive days of activity
+/// leading up to the present day.
+///
+/// Importantly, deleting a journal entry does not affect the streak, as the
+/// activity record persists in the dedicated `ActivityLog` table.
+final streakProvider = Provider<StreakState>((ref) {
+  final activityAsync = ref.watch(activityLogStreamProvider);
+  final adjustmentsAsync = ref.watch(streakAdjustmentsProvider);
+
+  // Gracefully handle loading/error states by using the last known good value or an empty list.
+  final logs = activityAsync.value ?? [];
+  final adjustments = adjustmentsAsync.value ?? [];
+
+  if (logs.isEmpty && adjustments.isEmpty) {
+    return StreakState.initial();
   }
 
-  Future<void> _loadPersistedData() async {
-    final prefs = await SharedPreferences.getInstance();
-    int savedStreak = prefs.getInt(_keyStreak) ?? 0;
-    List<String> historyStr = prefs.getStringList(_keyHistory) ?? [];
+  // 1. Consolidate all activity dates into a single, unique Set to prevent duplicates.
+  final Set<DateTime> combinedDates = {};
 
-    List<DateTime> history = historyStr.map((s) => DateTime.parse(s)).toList();
+  for (final log in logs) {
+    combinedDates.add(DateTime(log.date.year, log.date.month, log.date.day));
+  }
 
-    if (history.isNotEmpty) {
-      final lastActivity = history.last;
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      final lastActivityDay = DateTime(lastActivity.year, lastActivity.month, lastActivity.day);
+  for (final adj in adjustments) {
+    combinedDates.add(DateTime(adj.date.year, adj.date.month, adj.date.day));
+  }
 
-      final difference = today.difference(lastActivityDay).inDays;
+  // 2. Sort the dates in descending order (most recent first).
+  final sortedDates = combinedDates.toList()..sort((a, b) => b.compareTo(a));
 
-      if (difference > 1) {
-        // Dacă a trecut mai mult de o zi fără activitate, resetăm totul
-        savedStreak = 0;
-        history = [];
-        await prefs.setInt(_keyStreak, 0);
-        await prefs.setStringList(_keyHistory, []);
-      }
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final yesterday = today.subtract(const Duration(days: 1));
+
+  // 3. Check if the streak is active. A streak is broken if the last activity
+  // was before yesterday.
+  final lastActiveDate = sortedDates.first;
+  if (lastActiveDate.isBefore(yesterday)) {
+    Logger.debug('Streak broken: Last activity was before yesterday.');
+    return StreakState(
+      count: 0,
+      lastActivityDate: lastActiveDate,
+      activeDates: sortedDates,
+    );
+  }
+
+  // 4. Calculate the number of consecutive days by iterating backwards from the last active date.
+  int streakCount = 0;
+  DateTime currentCheckDate = lastActiveDate;
+
+  for (final date in sortedDates) {
+    if (date.isAtSameMomentAs(currentCheckDate)) {
+      streakCount++;
+      currentCheckDate = currentCheckDate.subtract(const Duration(days: 1));
+    } else {
+      // A gap was found that is not covered by any record, so the streak ends here.
+      break;
     }
-    state = StreakState(savedStreak, history);
   }
 
-  Future<void> markActivity() async {
-    final prefs = await SharedPreferences.getInstance();
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-
-    // Verificăm dacă am marcat deja ziua de azi în istoric
-    bool alreadyMarked = state.history.any((d) =>
-    d.year == today.year && d.month == today.month && d.day == today.day);
-
-    if (!alreadyMarked) {
-      final newCount = state.count + 1;
-      final newHistory = [...state.history, today];
-
-      state = StreakState(newCount, newHistory);
-
-      await prefs.setInt(_keyStreak, newCount);
-      // Salvăm datele în format scurt (YYYY-MM-DD) pentru eficiență
-      await prefs.setStringList(
-        _keyHistory,
-        newHistory.map((d) => d.toIso8601String().split('T')[0]).toList(),
-      );
-    }
-  }
-}
+  return StreakState(
+    count: streakCount,
+    lastActivityDate: lastActiveDate,
+    activeDates: sortedDates,
+  );
+});

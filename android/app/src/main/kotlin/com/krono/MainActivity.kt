@@ -1,4 +1,4 @@
-package com.krono.com.krono
+package com.krono.app
 
 import android.view.KeyEvent
 import io.flutter.embedding.android.FlutterFragmentActivity
@@ -9,24 +9,32 @@ class MainActivity : FlutterFragmentActivity() {
     // Must match the MethodChannel name used in Dart
     private val CHANNEL = "com.yourapp.volume"
     private var methodChannel: MethodChannel? = null
+    private var isCameraActive = false
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         methodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
+
+        methodChannel?.setMethodCallHandler { call, result ->
+            if (call.method == "setCameraActive") {
+                isCameraActive = call.arguments as Boolean
+                result.success(null)
+            } else {
+                result.notImplemented()
+            }
+        }
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         if (keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
-            try {
-                // send an event to Flutter — Dart handler will trigger the shutter
-                methodChannel?.invokeMethod("volume", keyCode)
-            } catch (e: Exception) {
-                // ignore
+            if (isCameraActive) {
+                try {
+                    methodChannel?.invokeMethod("volume", keyCode)
+                } catch (e: Exception) {
+                    // ignore
+                }
+                return true
             }
-            // return true -> prevent default system volume change.
-            // If you prefer to also change system volume, replace "return true" with:
-            // return super.onKeyDown(keyCode, event)
-            return true
         }
         return super.onKeyDown(keyCode, event)
     }

@@ -1,110 +1,90 @@
 {
+  "@@locale": "en",
+
   "appTitle": "Krono",
-  "streakSuffix": "Day Streak!",
-  "addMemory": "Add Today's Memory",
-  "quoteTitle": "Quote of the Day",
-  "visualJournal": "Your Visual Journal",
-  "noPhotos": "No photos yet.",
-  "editEntry": "Edit memory",
-  "moodTitle": "How was today?",
-  "takePhoto": "Take a photo",
-  "pickGallery": "Pick from gallery",
-  "myMood": "Your mood",
-  "noteHint": "What interesting happened?",
-  "saveDay": "Save Day",
-  "moodLabel": "Daily Mood",
-  "journal": "Journal",
-  "noNote": "No note for this day.",
-  "streakLongMessage": "You're phenomenal! You've saved memories for {count} days.",
-  "startFirstDay": "Start your first day!",
+  "version": "Version",
+  "madeWith": "Made with ❤️ using Flutter.",
+  "copyright": "© 2026 Krono Team. All rights reserved.",
+
+  "save": "Save",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "retry": "Retry",
+  "retake": "Retake",
+  "processing": "Processing…",
+  "unlock": "Unlock",
+
   "year": "year",
   "years": "years",
   "weekShort": "wk.",
   "day": "day",
   "days": "days",
-  "settings": "Settings",
-  "personalization": "Personalization",
-  "appTheme": "App Theme",
-  "chooseAccent": "Choose accent color",
-  "darkMode": "Dark Mode",
-  "dataBackup": "Data & Backup",
-  "exportBackup": "Export Full Backup",
-  "exportZipSubtitle": "Create a ZIP file with photos and data",
-  "importBackup": "Import Backup",
-  "importZipSubtitle": "Restore everything from a ZIP file",
-  "exportPdf": "Export as PDF",
-  "exportPdfSubtitle": "Create a book of your memories",
-  "info": "Information",
-  "appLock": "App Lock",
-  "biometrics": "Biometrics (FaceID / Fingerprint)",
-  "aboutKrono": "About Krono",
-  "dangerZone": "Danger Zone",
-  "deleteAll": "Delete All Data",
-  "irreversible": "Irreversible action",
-  "version": "Version",
-  "aboutDescription": "Krono is your daily visual journal. Designed to be simple, private, and fast.",
-  "madeWith": "Made with ❤️ using Flutter.",
-  "chooseTheme": "Choose Theme",
-  "cancel": "Cancel",
-  "delete": "Delete",
-  "deleteConfirmTitle": "Delete all data?",
-  "deleteConfirmDesc": "This action will permanently delete all memories from the journal. You cannot undo this operation.",
-  "backupSuccess": "Backup generated successfully!",
-  "importSuccess": "Data imported successfully!",
-  "deleteSuccess": "All data has been deleted.",
-  "errorExport": "Export error: {e}",
-  "errorImport": "Import error: {e}",
+
+  "yourMemories": "Your Memories",
+  "quoteTitle": "Quote of the Day",
+  "streakSuffix": "Day Streak!",
+  "streakLongMessage": "You're phenomenal! You've saved memories for {count} days.",
+  "startFirstDay": "Start your first day!",
+  "emptyJournalTitle": "Your journal is empty",
+  "emptyJournalMessage": "Start by adding your first memory! ✨",
+  "createMemory": "Create a memory",
+  "startFirstMemory": "Start by adding your first memory! ✨",
+
+  "journal": "Journal",
+  "visualJournal": "Your Visual Journal",
+  "addMemory": "Add Today's Memory",
+  "editEntry": "Edit memory",
+  "saveDay": "Save Day",
+  "writeMemory": "Write a memory...",
+  "noteHint": "What interesting happened?",
+  "noNote": "No note for this day.",
+  "noPhotos": "No photos yet.",
+  "futureDateError": "You can't add memories for the future! 😊",
+
+  "camera": "Camera",
+  "gallery": "Gallery",
+  "takePhoto": "Take a photo",
+  "pickGallery": "Pick from gallery",
+
+  "moodTitle": "How was today?",
+  "myMood": "Your mood",
+  "yourMood": "Your mood",
+  "moodLabel": "Daily Mood",
+
+  "location": "Location",
+  "addLocation": "Add location",
+  "weather": "Weather",
+  "addWeather": "Add weather",
+
   "memoriesFrom": "Memories from {date}",
   "@memoriesFrom": {
     "description": "Title for the multiple memories modal",
     "placeholders": {
-      "date": {
-        "type": "String"
-      }
+      "date": { "type": "String" }
     }
   },
   "memoryPopup": "{emoji} Memory",
   "@memoryPopup": {
     "description": "Label for the long-press preview popup",
     "placeholders": {
-      "emoji": {
-        "type": "String"
-      }
-    }
-  },
-  "camera": "Camera",
-  "gallery": "Gallery",
-  "writeMemory": "Write a memory...",
-  "saveGallerySuccess": "Image saved to gallery! ✨",
-  "deleteEntryTitle": "Delete this memory?",
-  "deleteEntryDesc": "This action is permanent and will also delete the photo.",
-  "entryDeleted": "Memory deleted",
-  "yourMood": "Your mood",
-  "language": "Language",
-  "chooseLanguage": "Choose Language",
-  "authReason": "Confirm identity to open the journal",
-  "accessRestricted": "Access Restricted",
-  "confirmIdentity": "Please confirm your identity to continue.",
-  "unlock": "Unlock",
-  "noEntriesToExport": "No entries found to export.",
-  "generatingPdf": "Generating PDF...",
-  "@errorExport": {
-    "placeholders": {
-      "e": {
-        "type": "String"
-      }
+      "emoji": { "type": "String" }
     }
   },
   "memoriesCount": "{count, plural, =1{1 memory} other{{count} memories}}",
-  "notifications": "Notifications",
-  "dailyReminder": "Daily Reminder",
-  "reminderSubtitle": "Get a notification so you don't forget to save your memory.",
-  "reminderNotificationTitle": "Time for Krono 📸",
-  "reminderNotificationBody": "How was your day? Don't forget to add a photo and some thoughts!",
-  "notificationsDenied": "Notification permission denied",
-  "authReasonToggleOn": "Confirm identity to enable app lock",
-  "authReasonToggleOff": "Confirm identity to disable app lock",
-  "authFailed": "Authentication failed",
+  "deleteEntryTitle": "Delete this memory?",
+  "deleteEntryDesc": "This action is permanent and will also delete the photo.",
+
+  "settings": "Settings",
+  "personalization": "Personalization",
+  "info": "Information",
+  "aboutKrono": "About Krono",
+  "aboutKronoDetail": "Krono is your personal space for thoughts and memories. Designed with privacy and simplicity in mind, it helps you capture life's moments one day at a time. Thank you for choosing us to be part of your journey!",
+  "aboutDescription": "Krono is your daily visual journal. Designed to be simple, private, and fast.",
+
+  "appTheme": "App Theme",
+  "chooseTheme": "Choose Theme",
+  "chooseAccent": "Choose accent color",
+  "darkMode": "Dark Mode",
   "themeKrono": "Krono",
   "themeEmerald": "Emerald",
   "themeOcean": "Ocean",
@@ -113,29 +93,107 @@
   "themeMidnight": "Midnight",
   "themeGarnet": "Garnet",
   "themeAurora": "Aurora",
+
+  "language": "Language",
+  "chooseLanguage": "Choose Language",
+
+  "notifications": "Notifications",
+  "dailyReminder": "Daily Reminder",
+  "reminderSubtitle": "Get a notification so you don't forget to save your memory.",
+  "reminderNotificationTitle": "Time for Krono 📸",
+  "reminderNotificationBody": "How was your day? Don't forget to add a photo and some thoughts!",
   "notificationTitle": "Pause. Capture. Krono. ✨",
   "notificationBody": "One photo today, a thousand memories tomorrow.",
-  "save": "Save",
-  "aboutKronoDetail": "Krono is your personal space for thoughts and memories. Designed with privacy and simplicity in mind, it helps you capture life's moments one day at a time. Thank you for choosing us to be part of your journey!",
-  "copyright": "© 2026 Krono Team. All rights reserved.",
-  "backupRestored": "Backup restored successfully!",
-  "confirmDeleteTitle": "Delete all data?",
-  "confirmDeleteContent": "Are you sure you want to delete all data? This action is permanent.",
-  "startFirstMemory": "Start by adding your first memory! ✨",
-  "loadingError": "Error loading data.",
-  "myKronoBackup": "My Krono Backup",
-  "addLocation": "Add location",
-  "addWeather": "Add weather",
-  "location": "Location",
-  "weather": "Weather",
+  "notificationsDenied": "Notification permission denied",
   "notificationsDeniedTitle": "Notifications Disabled",
   "notificationsDeniedContent": "Notifications are disabled. Please enable them from the phone settings to receive daily reminders.",
   "openSettings": "Open Settings",
+
+  "appLock": "App Lock",
+  "biometrics": "Biometrics (FaceID / Fingerprint)",
+  "authReason": "Confirm identity to open the journal",
+  "authReasonToggleOn": "Confirm identity to enable app lock",
+  "authReasonToggleOff": "Confirm identity to disable app lock",
+  "authFailed": "Authentication failed",
+  "accessRestricted": "Access Restricted",
+  "confirmIdentity": "Please confirm your identity to continue.",
+
+  "dataBackup": "Data & Backup",
+  "myKronoBackup": "My Krono Backup",
+
+  "exportBackup": "Export Full Backup",
+  "exportZipSubtitle": "Create a ZIP file with photos and data",
+  "exportingTitle": "Preparing Backup...",
+  "exportingMessage": "Please wait while we compress your memories. This may take a minute.",
+  "backupShareSubject": "Krono Backup",
+  "backupShareText": "Here is my Krono journal backup file.",
+
+  "importBackup": "Import Backup",
+  "importZipSubtitle": "Restore everything from a ZIP file",
+  "importingTitle": "Restoring...",
+  "importingMessage": "We are bringing your memories back.",
+
+  "exportPdf": "Export as PDF",
+  "exportPdfSubtitle": "Create a book of your memories",
+  "generatingPdf": "Generating PDF...",
+  "noEntriesToExport": "No entries found to export.",
+
+  "securityNotSetup": "Security not set up. Please enable a PIN or biometrics in your device settings.",
+
+  "dangerZone": "Danger Zone",
+  "deleteAll": "Delete All Data",
   "deleteAllData": "Delete All Data",
+  "irreversible": "Irreversible action",
+  "confirmDeleteTitle": "Delete all data?",
+  "confirmDeleteContent": "Are you sure you want to delete all data? This action is permanent.",
+  "deleteConfirmTitle": "Delete all data?",
+  "deleteConfirmDesc": "This action will permanently delete all memories from the journal. You cannot undo this operation.",
+
+  "saveGallerySuccess": "Image saved to gallery! ✨",
+  "entryDeleted": "Memory deleted",
+  "backupSuccess": "Backup generated successfully!",
+  "backupExportedSuccess": "Backup exported successfully!",
+  "backupRestored": "Backup restored successfully!",
+  "importSuccess": "Data imported successfully!",
+  "deleteSuccess": "All data has been deleted.",
   "deleteAllSuccess": "All data has been successfully deleted",
-  "yourMemories": "Your Memories",
-  "emptyJournalMessage": "Start by adding your first memory! ✨",
-  "futureDateError": "You can't add memories for the future! 😊",
-  "emptyJournalTitle": "Your journal is empty",
-  "createMemory": "Create a memory"
+
+  "loadingError": "Error loading data.",
+  "imageLoadError": "Error loading image",
+  "backupExportError": "Failed to create backup. Please try again.",
+  "backupErrorEmpty": "Backup failed: Generated file is empty.",
+  "errorExport": "Export error: {e}",
+  "@errorExport": {
+    "placeholders": {
+      "e": { "type": "String" }
+    }
+  },
+  "errorImport": "Import error: {e}",
+  "@errorImport": {
+    "placeholders": {
+      "e": { "type": "String" }
+    }
+  },
+  "noInternetError": "Internet connection required for weather and location.",
+  "@noInternetError": {
+    "description": "Error message shown when the user attempts to fetch metadata without an active internet connection."
+  },
+  "locationDisabled": "Location services are disabled on this device.",
+  "@locationDisabled": {
+    "description": "Error message shown when the system GPS/Location toggle is turned off."
+  },
+  "locationPermissionDenied": "Location permission was denied.",
+  "@locationPermissionDenied": {
+    "description": "Error message shown when the user refuses to grant location access to the app."
+  },
+  "errorFetchingMetadata": "Could not fetch weather and location data.",
+  "@errorFetchingMetadata": {
+    "description": "Generic error message for metadata retrieval failures."
+  },
+  "enableLocationMessage": "Please enable location access in settings to fetch weather and city name.",
+
+  "privacyPolicy": "Privacy Policy",
+  "sendFeedback": "Send Feedback",
+  "feedbackSubject": "Krono Feedback",
+  "deviceInfo": "Device Info"
 }

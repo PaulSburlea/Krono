@@ -1,25 +1,29 @@
 import 'dart:io';
-import 'dart:convert';
-import 'package:Krono/src/features/journal/presentation/widgets/camera/custom_camera_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:gap/gap.dart';
-import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:drift/drift.dart' show InsertMode;
+
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/database/database.dart';
-import '../../../core/providers/streak_provider.dart';
-import '../../../core/providers/locale_provider.dart';
+import '../../settings/providers/locale_provider.dart';
+import '../../../core/utils/logger_service.dart';
+import '../../../core/utils/weather_service.dart';
 import '../data/journal_repository.dart';
+import '../data/models/journal_entry.dart';
+import 'widgets/camera/custom_camera_screen.dart';
 
-
+/// A screen for creating a new journal entry or editing an existing one.
 class AddEntryScreen extends ConsumerStatefulWidget {
-  final DayEntry? entry;
+  final JournalEntry? entry;
   final DateTime? initialDate;
+  final String? initialImagePath;
 
-  const AddEntryScreen({super.key, this.entry, this.initialDate});
+  const AddEntryScreen({super.key, this.entry, this.initialDate, this.initialImagePath});
 
   @override
   ConsumerState<AddEntryScreen> createState() => _AddEntryScreenState();
@@ -31,22 +35,29 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
   String? _location;
   String? _weatherTemp;
   String? _weatherIcon;
-  final _noteController = TextEditingController();
-  bool _isSaving = false;
-  bool _isLoadingData = false;
 
-  final String _weatherApiKey = 'eb6785447d8412398e7cb23918660ece';
+  // Flag to track if the source image is temporary (from camera)
+  bool _isImageTemporary = false;
+
+  late final TextEditingController _noteController;
+  bool _isSaving = false;
+  bool _isLoadingMetadata = false;
 
   @override
   void initState() {
     super.initState();
+    _noteController = TextEditingController(text: widget.entry?.note ?? '');
+
     if (widget.entry != null) {
       _imagePath = widget.entry!.photoPath;
       _mood = widget.entry!.moodRating;
-      _noteController.text = widget.entry!.note ?? '';
       _location = widget.entry!.location;
       _weatherTemp = widget.entry!.weatherTemp;
       _weatherIcon = widget.entry!.weatherIcon;
+    } else if (widget.initialImagePath != null) {
+      _imagePath = widget.initialImagePath;
+      // Assume images passed directly are from the camera (temporary)
+      _isImageTemporary = true;
     }
   }
 
@@ -56,99 +67,158 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
     super.dispose();
   }
 
-  Future<void> _fetchLocationAndWeather() async {
-    setState(() => _isLoadingData = true);
+  Future<void> _fetchMetadata() async {
+    Logger.info('Attempting to fetch location and weather metadata.');
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _isLoadingMetadata = true);
+
     try {
+      await Geolocator.isLocationServiceEnabled();
       LocationPermission permission = await Geolocator.checkPermission();
+
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) throw 'Permisiune refuzată';
+        if (permission == LocationPermission.denied) {
+          Logger.warning('User denied location permission.');
+          _showErrorSnackBar(l10n.locationPermissionDenied);
+          return;
+        }
       }
 
-      Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.low);
-
-      final currentLocale = ref.read(localeProvider);
-      final String langCode = currentLocale.languageCode;
-
-      await setLocaleIdentifier(langCode);
-
-      List<Placemark> placemarks = await placemarkFromCoordinates(
-        position.latitude,
-        position.longitude,
-      );
-
-      if (placemarks.isNotEmpty) {
-        final p = placemarks.first;
-        setState(() => _location = "${p.locality}, ${p.administrativeArea}");
+      if (permission == LocationPermission.deniedForever) {
+        Logger.warning('User has permanently denied location permission.');
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text(l10n.locationPermissionDenied),
+              content: Text(l10n.enableLocationMessage),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(l10n.cancel),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Logger.info('User tapped "Open Settings" for location permission.');
+                    Navigator.pop(context);
+                    Geolocator.openAppSettings();
+                  },
+                  child: Text(l10n.openSettings),
+                ),
+              ],
+            ),
+          );
+        }
+        return;
       }
 
-      final url = 'https://api.openweathermap.org/data/2.5/weather?'
-          'lat=${position.latitude}'
-          '&lon=${position.longitude}'
-          '&appid=$_weatherApiKey'
-          '&units=metric'
-          '&lang=$langCode';
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.low),
+      ).timeout(const Duration(seconds: 15));
+      Logger.debug('Successfully retrieved GPS position: ${position.latitude}, ${position.longitude}');
 
-      final response = await http.get(Uri.parse(url));
+      try {
+        final langCode = ref.read(localeProvider).languageCode;
+        await setLocaleIdentifier(langCode);
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final temp = data['main']['temp'].round();
-        final description = data['weather'][0]['description'] as String;
+        final placemarks = await placemarkFromCoordinates(
+          position.latitude,
+          position.longitude,
+        );
 
-        final capitalizedDesc = description.isNotEmpty
-            ? description[0].toUpperCase() + description.substring(1)
-            : description;
+        if (placemarks.isNotEmpty) {
+          final p = placemarks.first;
+          setState(() => _location = "${p.locality}, ${p.administrativeArea}");
+        }
+
+        final weatherData = await ref.read(weatherServiceProvider).fetchWeather(
+          lat: position.latitude,
+          lon: position.longitude,
+          langCode: langCode,
+        );
 
         setState(() {
-          _weatherTemp = "$temp°C, $capitalizedDesc";
-          _weatherIcon = data['weather'][0]['icon'];
+          _weatherTemp = weatherData.temperature;
+          _weatherIcon = weatherData.iconCode;
         });
+        Logger.debug('Successfully fetched metadata. Location: $_location, Weather: $_weatherTemp');
+      } on SocketException catch (e, stack) {
+        Logger.error('Network error while fetching metadata.', e, stack);
+        _showErrorSnackBar(l10n.noInternetError);
+      } catch (e, stack) {
+        Logger.error('Failed to fetch geocoding or weather data.', e, stack);
       }
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Eroare date: $e")));
+    } catch (e, stack) {
+      Logger.error('Failed to get device location.', e, stack);
+      _showErrorSnackBar(l10n.locationDisabled);
     } finally {
-      if (mounted) setState(() => _isLoadingData = false);
+      if (mounted) setState(() => _isLoadingMetadata = false);
     }
   }
 
-  // Metoda veche pentru galerie (folosește ImagePicker)
-  Future<void> _pickImageFromGallery() async {
-    final picker = ImagePicker();
-    final photo = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
-    if (photo != null) setState(() => _imagePath = photo.path);
+  void _showErrorSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Theme.of(context).colorScheme.error,
+      ),
+    );
   }
 
+  /// Validates and persists the journal entry to the local database.
   Future<void> _saveEntry() async {
     if (_imagePath == null) return;
+
+    Logger.info('User initiated save for journal entry.');
     setState(() => _isSaving = true);
+    HapticFeedback.mediumImpact();
+
     try {
       final repo = ref.read(journalRepositoryProvider);
+      final db = ref.read(databaseProvider);
+      final entryDate = widget.initialDate ?? widget.entry?.date ?? DateTime.now();
+
+      final journalEntry = JournalEntry(
+        id: widget.entry?.id,
+        date: entryDate,
+        photoPath: _imagePath!,
+        thumbnailPath: widget.entry?.thumbnailPath,
+        moodRating: _mood,
+        note: _noteController.text,
+        location: _location,
+        weatherTemp: _weatherTemp,
+        weatherIcon: _weatherIcon,
+      );
+
       if (widget.entry != null) {
+        final bool imageChanged = _imagePath != widget.entry!.photoPath;
+        Logger.info('Updating existing entry ID: ${widget.entry!.id}. Image changed: $imageChanged');
         await repo.updateEntry(
-          entry: widget.entry!,
-          newPhotoPath: _imagePath!,
-          newMood: _mood,
-          newNote: _noteController.text,
-          newLocation: _location,
-          newWeatherTemp: _weatherTemp,
-          newWeatherIcon: _weatherIcon,
+          journalEntry,
+          newTempPath: imageChanged ? _imagePath : null,
+          deleteSource: imageChanged ? _isImageTemporary : false,
         );
       } else {
-        await repo.addEntry(
-          tempPhotoPath: _imagePath!,
-          mood: _mood,
-          note: _noteController.text,
-          date: widget.initialDate,
-          location: _location,
-          weatherTemp: _weatherTemp,
-          weatherIcon: _weatherIcon,
-        );
-        ref.read(streakProvider.notifier).markActivity();
+        Logger.info('Adding new entry.');
+        await repo.addEntry(journalEntry, _imagePath!, deleteSource: _isImageTemporary);
       }
+
+      final normalizedDate = DateTime(entryDate.year, entryDate.month, entryDate.day);
+      await db.into(db.activityLog).insert(
+        ActivityLogCompanion.insert(date: normalizedDate),
+        mode: InsertMode.insertOrIgnore,
+      );
+      Logger.info('Activity log updated for date: $normalizedDate');
+
       if (mounted) Navigator.pop(context, true);
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    } catch (e, stack) {
+      Logger.error('Failed to save journal entry.', e, stack);
+      if (mounted) {
+        _showErrorSnackBar("Error: ${e.toString()}");
+      }
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -161,95 +231,65 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(widget.entry != null ? l10n.editEntry : l10n.moodTitle,
-            style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          widget.entry != null ? l10n.editEntry : l10n.moodTitle,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         leading: IconButton(
           icon: const Icon(Icons.close_rounded),
           onPressed: () => Navigator.pop(context),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. FOTO
-            GestureDetector(
+            _PhotoPlaceholder(
+              imagePath: _imagePath,
+              heroTag: widget.entry != null ? 'photo_${widget.entry!.id}' : 'add_photo',
               onTap: () => _showImageSourceSheet(context, l10n),
-              child: Hero(
-                tag: widget.entry != null ? 'photo_${widget.entry!.id}' : 'add_photo',
-                child: Container(
-                  height: 300,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: colorScheme.primaryContainer.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(32),
-                    image: _imagePath != null
-                        ? DecorationImage(image: FileImage(File(_imagePath!)), fit: BoxFit.cover)
-                        : null,
-                  ),
-                  child: _imagePath == null
-                      ? Icon(Icons.add_a_photo_outlined, size: 48, color: colorScheme.primary)
-                      : const SizedBox.shrink(),
-                ),
-              ),
-            ),
-            const Gap(32),
-
-            // 2. MOOD
-            Text(l10n.myMood, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            const Gap(16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: List.generate(5, (index) {
-                int rating = index + 1;
-                bool sel = _mood == rating;
-                return GestureDetector(
-                  onTap: () => setState(() => _mood = rating),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: sel ? colorScheme.primary : colorScheme.surface,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(_getEmoji(rating), style: const TextStyle(fontSize: 28)),
-                  ),
-                );
-              }),
             ),
             const Gap(24),
-
-            // 3. LOCAȚIE ȘI METEO
-            Row(
-              children: [
-                Expanded(
-                  child: _buildActionCard(
-                    icon: Icons.location_on_rounded,
-                    label: _location ?? l10n.addLocation,
-                    isSelected: _location != null,
-                    onTap: _fetchLocationAndWeather,
-                    isLoading: _isLoadingData,
-                  ),
-                ),
-                const Gap(8),
-                Expanded(
-                  child: _buildActionCard(
-                    icon: Icons.wb_cloudy_rounded,
-                    label: _weatherTemp ?? l10n.addWeather,
-                    isSelected: _weatherTemp != null,
-                    onTap: _fetchLocationAndWeather,
-                    isLoading: _isLoadingData,
-                    weatherIcon: _weatherIcon,
-                  ),
-                ),
-              ],
+            Text(l10n.myMood, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            const Gap(12),
+            _MoodSelector(
+              currentMood: _mood,
+              onMoodSelected: (val) {
+                Logger.info('Mood changed to: $val');
+                setState(() => _mood = val);
+              },
             ),
-            const Gap(32),
-
-            // 4. NOTE
+            const Gap(24),
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: _MetadataCard(
+                      icon: Icons.location_on_rounded,
+                      label: _location ?? l10n.addLocation,
+                      isSelected: _location != null,
+                      onTap: _fetchMetadata,
+                      isLoading: _isLoadingMetadata,
+                    ),
+                  ),
+                  const Gap(12),
+                  Expanded(
+                    child: _MetadataCard(
+                      icon: Icons.wb_cloudy_rounded,
+                      label: _weatherTemp ?? l10n.addWeather,
+                      isSelected: _weatherTemp != null,
+                      onTap: _fetchMetadata,
+                      isLoading: _isLoadingMetadata,
+                      weatherIcon: _weatherIcon,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Gap(24),
             Text(l10n.noteHint, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const Gap(12),
             TextField(
@@ -258,75 +298,267 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
               textCapitalization: TextCapitalization.sentences,
               decoration: InputDecoration(
                 filled: true,
-                fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                 hintText: l10n.writeMemory,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide.none,
+                ),
               ),
             ),
             const Gap(40),
-
-            // 5. BUTON SALVARE
             SizedBox(
               width: double.infinity,
               height: 60,
-              child: ElevatedButton(
+              child: FilledButton(
                 onPressed: _isSaving || _imagePath == null ? null : _saveEntry,
-                style: ElevatedButton.styleFrom(
+                style: FilledButton.styleFrom(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   backgroundColor: colorScheme.primary,
                   foregroundColor: colorScheme.onPrimary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                 ),
                 child: _isSaving
-                    ? const CircularProgressIndicator(color: Colors.white)
+                    ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
                     : Text(l10n.saveDay, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ),
             ),
-            const Gap(20),
+            const Gap(24),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildActionCard({
-    required IconData icon,
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-    bool isLoading = false,
-    String? weatherIcon,
-  }) {
+  /// Displays a modal bottom sheet for selecting an image source.
+  void _showImageSourceSheet(BuildContext context, AppLocalizations l10n) {
+    Logger.info('Showing image source selection sheet.');
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 20, left: 12, right: 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt_rounded),
+                title: Text(l10n.camera),
+                onTap: () async {
+                  Navigator.pop(context);
+                  Logger.info('User selected "Camera" as image source.');
+                  final String? photoPath = await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CustomCameraScreen()),
+                  );
+                  if (photoPath != null) {
+                    Logger.info('Image captured from camera: $photoPath');
+                    _handleNewImage(photoPath, isTemporary: true);
+                  } else {
+                    Logger.info('Camera action was cancelled by user.');
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_rounded),
+                title: Text(l10n.gallery),
+                onTap: () async {
+                  Navigator.pop(context);
+                  Logger.info('User selected "Gallery" as image source.');
+                  final picker = ImagePicker();
+                  final photo = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+                  if (photo != null) {
+                    Logger.info('Image picked from gallery: ${photo.path}');
+                    _handleNewImage(photo.path, isTemporary: false);
+                  } else {
+                    Logger.info('Gallery picking was cancelled by user.');
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Updates the UI with the new image path and its temporary status.
+  void _handleNewImage(String path, {required bool isTemporary}) {
+    setState(() {
+      _imagePath = path;
+      _isImageTemporary = isTemporary;
+    });
+  }
+}
+
+/// A widget that displays the selected photo or a placeholder to add one.
+class _PhotoPlaceholder extends StatelessWidget {
+  /// The local file path of the image to display. If null, a placeholder is shown.
+  final String? imagePath;
+  /// The Hero animation tag for the photo, ensuring a smooth transition.
+  final String heroTag;
+  /// The callback function to execute when the placeholder is tapped.
+  final VoidCallback onTap;
+
+  /// Creates a photo placeholder widget.
+  const _PhotoPlaceholder({required this.imagePath, required this.heroTag, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: onTap,
+      child: Hero(
+        tag: heroTag,
+        child: AspectRatio(
+          aspectRatio: 1,
+          child: Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: colorScheme.primaryContainer.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(32),
+              border: Border.all(color: colorScheme.primary.withValues(alpha: 0.1)),
+              image: imagePath != null
+                  ? DecorationImage(
+                  image: FileImage(File(imagePath!)),
+                  fit: BoxFit.cover
+              )
+                  : null,
+            ),
+            child: imagePath == null
+                ? Center(child: Icon(Icons.add_a_photo_outlined, size: 48, color: colorScheme.primary))
+                : const SizedBox.shrink(),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A horizontal selector for choosing a mood rating from 1 to 5.
+class _MoodSelector extends StatelessWidget {
+  /// The currently selected mood rating (1-5).
+  final int currentMood;
+  /// A callback that is invoked with the new rating when a mood is selected.
+  final ValueChanged<int> onMoodSelected;
+
+  /// Creates a mood selector widget.
+  const _MoodSelector({required this.currentMood, required this.onMoodSelected});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final emojis = ['😢', '🙁', '😐', '🙂', '🤩'];
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: List.generate(5, (index) {
+        int rating = index + 1;
+        bool isSelected = currentMood == rating;
+        return GestureDetector(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            onMoodSelected(rating);
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: isSelected ? colorScheme.primary : colorScheme.surfaceContainerHigh,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: isSelected
+                  ? [BoxShadow(color: colorScheme.primary.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4))]
+                  : null,
+            ),
+            child: Text(emojis[index], style: const TextStyle(fontSize: 30)),
+          ),
+        );
+      }),
+    );
+  }
+}
+
+/// A card for displaying and fetching metadata like location or weather.
+class _MetadataCard extends StatelessWidget {
+  /// The icon representing the type of metadata.
+  final IconData icon;
+  /// The text label displaying the metadata value or a prompt.
+  final String label;
+  /// A boolean indicating if the metadata has been successfully fetched.
+  final bool isSelected;
+  /// The callback function to execute when the card is tapped to fetch data.
+  final VoidCallback onTap;
+  /// A boolean to show a loading indicator while data is being fetched.
+  final bool isLoading;
+  /// An optional URL for a weather icon to display instead of the default [icon].
+  final String? weatherIcon;
+
+  /// Creates a metadata card widget.
+  const _MetadataCard({
+    required this.icon,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+    this.isLoading = false,
+    this.weatherIcon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return InkWell(
       onTap: isLoading ? null : onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        height: 50,
+        height: 64,
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          color: isSelected ? colorScheme.primary.withOpacity(0.08) : colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
+          color: isSelected ? colorScheme.primary.withValues(alpha: 0.08) : colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? colorScheme.primary.withOpacity(0.4) : colorScheme.outlineVariant.withOpacity(0.5),
-            width: 1,
+            color: isSelected ? colorScheme.primary.withValues(alpha: 0.3) : colorScheme.outlineVariant.withValues(alpha: 0.3),
           ),
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.max,
           children: [
-            if (isLoading)
-              const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-            else if (weatherIcon != null)
-              Image.network('https://openweathermap.org/img/wn/$weatherIcon@2x.png', width: 32, height: 32)
-            else
-              Icon(icon, size: 18, color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant),
-            const Gap(6),
-            Flexible(
+            SizedBox(
+              width: 28,
+              height: 28,
+              child: Center(
+                child: isLoading
+                    ? SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: colorScheme.primary,
+                  ),
+                )
+                    : weatherIcon != null
+                    ? Image.network(
+                  'https://openweathermap.org/img/wn/$weatherIcon@2x.png',
+                  width: 28,
+                  height: 28,
+                  errorBuilder: (_, __, ___) => Icon(icon, size: 20),
+                )
+                    : Icon(
+                  icon,
+                  size: 20,
+                  color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            const Gap(12),
+            Expanded(
               child: Text(
                 label,
                 style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
                 ),
                 maxLines: 1,
@@ -337,57 +569,5 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
         ),
       ),
     );
-  }
-
-  // ✅ MODIFICARE: Integrarea navigării către CustomCameraScreen
-  void _showImageSourceSheet(BuildContext context, AppLocalizations l10n) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Opțiunea 1: Camera Custom
-            ListTile(
-              leading: const Icon(Icons.camera_alt_rounded),
-              title: Text(l10n.camera),
-              onTap: () async {
-                Navigator.pop(context); // Închidem modalul
-
-                // Deschidem ecranul nostru de cameră Full Screen
-                final String? photoPath = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const CustomCameraScreen(),
-                  ),
-                );
-
-                // Dacă utilizatorul a făcut poza și a dat confirm, o salvăm
-                if (photoPath != null) {
-                  setState(() => _imagePath = photoPath);
-                }
-              },
-            ),
-
-            // Opțiunea 2: Galerie (Sistem nativ)
-            ListTile(
-              leading: const Icon(Icons.photo_library_rounded),
-              title: Text(l10n.gallery),
-              onTap: () {
-                Navigator.pop(context);
-                _pickImageFromGallery();
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _getEmoji(int rating) {
-    const emojis = ['😢', '🙁', '😐', '🙂', '🤩'];
-    return emojis[rating.clamp(1, 5) - 1];
   }
 }

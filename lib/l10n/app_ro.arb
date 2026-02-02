@@ -1,108 +1,90 @@
 {
+  "@@locale": "ro",
+
   "appTitle": "Krono",
-  "streakSuffix": "Zile de Amintiri!",
-  "addMemory": "Adaugă amintirea de azi",
-  "quoteTitle": "Citatul zilei",
-  "visualJournal": "Jurnalul tău vizual",
-  "noPhotos": "Încă nu ai nicio poză.",
-  "editEntry": "Editează amintirea",
-  "moodTitle": "Cum a fost azi?",
-  "takePhoto": "Fă o poză",
-  "pickGallery": "Alege din galerie",
-  "myMood": "Mood-ul tău",
-  "noteHint": "Ce s-a întâmplat interesant?",
-  "saveDay": "Salvează ziua",
-  "moodLabel": "Mood-ul zilei",
-  "journal": "Jurnal",
-  "noNote": "Nicio notiță pentru această zi.",
-  "streakLongMessage": "Ești fenomenal! Ai salvat amintiri timp de {count} zile.",
-  "startFirstDay": "Începe prima ta zi!",
+  "version": "Versiune",
+  "madeWith": "Creat cu ❤️ folosind Flutter.",
+  "copyright": "© 2026 Echipa Krono. Toate drepturile rezervate.",
+
+  "save": "Salvează",
+  "cancel": "Anulează",
+  "delete": "Șterge",
+  "retry": "Încearcă din nou",
+  "retake": "Refă",
+  "processing": "Se procesează…",
+  "unlock": "Deblochează",
+
   "year": "an",
   "years": "ani",
   "weekShort": "săpt.",
   "day": "zi",
   "days": "zile",
-  "settings": "Setări",
-  "personalization": "Personalizare",
-  "appTheme": "Temă Aplicație",
-  "chooseAccent": "Alege culoarea de accent",
-  "darkMode": "Mod Întunecat",
-  "dataBackup": "Date și Backup",
-  "exportBackup": "Exportă Backup Complet",
-  "exportZipSubtitle": "Creează un fișier ZIP cu poze și date",
-  "importBackup": "Importă Backup",
-  "importZipSubtitle": "Restabilește totul dintr-un fișier ZIP",
-  "exportPdf": "Exportă ca PDF",
-  "exportPdfSubtitle": "Creează o carte cu amintirile tale",
-  "info": "Informații",
-  "appLock": "Blocare Aplicație",
-  "biometrics": "Biometrie (FaceID / Fingerprint)",
-  "aboutKrono": "Despre Krono",
-  "dangerZone": "Danger Zone",
-  "deleteAll": "Șterge toate datele",
-  "irreversible": "Acțiune ireversibilă",
-  "version": "Versiune",
-  "aboutDescription": "Krono este jurnalul tău vizual zilnic. Conceput să fie simplu, privat și rapid.",
-  "madeWith": "Creat cu ❤️ folosind Flutter.",
-  "chooseTheme": "Alege Tema",
-  "cancel": "Anulează",
-  "delete": "Șterge",
-  "deleteConfirmTitle": "Ștergi toate datele?",
-  "deleteConfirmDesc": "Această acțiune va șterge permanent toate amintirile din jurnal. Nu poți anula această operațiune.",
-  "backupSuccess": "Backup generat cu succes!",
-  "importSuccess": "Datele au fost importate cu succes!",
-  "deleteSuccess": "Toate datele au fost șterse.",
-  "errorExport": "Eroare la export: {e}",
-  "errorImport": "Eroare la import: {e}",
+
+  "yourMemories": "Amintirile tale",
+  "quoteTitle": "Citatul zilei",
+  "streakSuffix": "Zile de Amintiri!",
+  "streakLongMessage": "Ești fenomenal! Ai salvat amintiri timp de {count} zile.",
+  "startFirstDay": "Începe prima ta zi!",
+  "emptyJournalTitle": "Jurnalul tău e gol",
+  "emptyJournalMessage": "Începe prin a adăuga prima amintire! ✨",
+  "createMemory": "Creează o amintire",
+  "startFirstMemory": "Începe prin a adăuga prima amintire! ✨",
+
+  "journal": "Jurnal",
+  "visualJournal": "Jurnalul tău vizual",
+  "addMemory": "Adaugă amintirea de azi",
+  "editEntry": "Editează amintirea",
+  "saveDay": "Salvează ziua",
+  "writeMemory": "Scrie o amintire...",
+  "noteHint": "Ce s-a întâmplat interesant?",
+  "noNote": "Nicio notiță pentru această zi.",
+  "noPhotos": "Încă nu ai nicio poză.",
+  "futureDateError": "Nu poți adăuga amintiri pentru viitor! 😊",
+
+  "camera": "Cameră",
+  "gallery": "Galerie",
+  "takePhoto": "Fă o poză",
+  "pickGallery": "Alege din galerie",
+
+  "moodTitle": "Cum a fost azi?",
+  "myMood": "Mood-ul tău",
+  "yourMood": "Mood-ul tău",
+  "moodLabel": "Mood-ul zilei",
+
+  "location": "Locație",
+  "addLocation": "Adaugă locația",
+  "weather": "Vreme",
+  "addWeather": "Adaugă vremea",
+
   "memoriesFrom": "Amintirile din {date}",
   "@memoriesFrom": {
+    "description": "Title for the multiple memories modal",
     "placeholders": {
-      "date": {
-        "type": "String"
-      }
+      "date": { "type": "String" }
     }
   },
   "memoryPopup": "{emoji} Amintire",
   "@memoryPopup": {
+    "description": "Label for the long-press preview popup",
     "placeholders": {
-      "emoji": {
-        "type": "String"
-      }
-    }
-  },
-  "camera": "Cameră",
-  "gallery": "Galerie",
-  "writeMemory": "Scrie o amintire...",
-  "saveGallerySuccess": "Imagine salvată în galerie! ✨",
-  "deleteEntryTitle": "Ștergi această amintire?",
-  "deleteEntryDesc": "Această acțiune este permanentă și va șterge și fotografia.",
-  "entryDeleted": "Amintire ștearsă",
-  "yourMood": "Mood-ul tău",
-  "language": "Limbă",
-  "chooseLanguage": "Alege limba",
-  "authReason": "Confirmă identitatea pentru a deschide jurnalul",
-  "accessRestricted": "Acces restricționat",
-  "confirmIdentity": "Confirmă identitatea pentru a continua.",
-  "unlock": "Deblochează",
-  "noEntriesToExport": "Nu există însemnări pentru export.",
-  "generatingPdf": "Se generează PDF-ul...",
-  "@errorExport": {
-    "placeholders": {
-      "e": {
-        "type": "String"
-      }
+      "emoji": { "type": "String" }
     }
   },
   "memoriesCount": "{count, plural, =1{o amintire} other{{count} amintiri}}",
-  "notifications": "Notificări",
-  "dailyReminder": "Reminder Zilnic",
-  "reminderSubtitle": "Primește o notificare pentru a nu uita să salvezi amintirea.",
-  "reminderNotificationTitle": "Timpul pentru Krono 📸",
-  "reminderNotificationBody": "Cum a fost ziua ta? Nu uita să adaugi o poză și câteva gânduri!",
-  "notificationsDenied": "Permisiunea pentru notificări a fost respinsă",
-  "authReasonToggleOn": "Confirmă identitatea pentru a activa blocarea",
-  "authReasonToggleOff": "Confirmă identitatea pentru a dezactiva blocarea",
-  "authFailed": "Autentificare eșuată",
+  "deleteEntryTitle": "Ștergi această amintire?",
+  "deleteEntryDesc": "Această acțiune este permanentă și va șterge și fotografia.",
+
+  "settings": "Setări",
+  "personalization": "Personalizare",
+  "info": "Informații",
+  "aboutKrono": "Despre Krono",
+  "aboutKronoDetail": "Krono este spațiul tău personal pentru gânduri și amintiri. Creat cu accent pe intimitate și simplitate, te ajută să surprinzi momentele vieții zi de zi. Îți mulțumim că ne-ai ales să facem parte din călătoria ta!",
+  "aboutDescription": "Krono este jurnalul tău vizual zilnic. Conceput să fie simplu, privat și rapid.",
+
+  "appTheme": "Temă Aplicație",
+  "chooseTheme": "Alege Tema",
+  "chooseAccent": "Alege culoarea de accent",
+  "darkMode": "Mod Întunecat",
   "themeKrono": "Krono",
   "themeEmerald": "Smarald",
   "themeOcean": "Ocean",
@@ -111,29 +93,107 @@
   "themeMidnight": "Miezul nopții",
   "themeGarnet": "Garnet",
   "themeAurora": "Aurora",
+
+  "language": "Limbă",
+  "chooseLanguage": "Alege limba",
+
+  "notifications": "Notificări",
+  "dailyReminder": "Reminder Zilnic",
+  "reminderSubtitle": "Primește o notificare pentru a nu uita să salvezi amintirea.",
+  "reminderNotificationTitle": "Timpul pentru Krono 📸",
+  "reminderNotificationBody": "Cum a fost ziua ta? Nu uita să adaugi o poză și câteva gânduri!",
   "notificationTitle": "Zâmbește! 📸",
   "notificationBody": "E timpul pentru momentul tău zilnic. Cum arată ziua ta de astăzi?",
-  "save": "Salvează",
-  "aboutKronoDetail": "Krono este spațiul tău personal pentru gânduri și amintiri. Creat cu accent pe intimitate și simplitate, te ajută să surprinzi momentele vieții zi de zi. Îți mulțumim că ne-ai ales să facem parte din călătoria ta!",
-  "copyright": "© 2026 Echipa Krono. Toate drepturile rezervate.",
-  "backupRestored": "Backup restaurat cu succes!",
-  "confirmDeleteTitle": "Ștergi toate datele?",
-  "confirmDeleteContent": "Sigur vrei să ștergi toate datele? Această acțiune este permanentă.",
-  "startFirstMemory": "Începe prin a adăuga prima amintire! ✨",
-  "loadingError": "Eroare la încărcare.",
-  "myKronoBackup": "Backup-ul meu Krono",
-  "addLocation": "Adaugă locația",
-  "addWeather": "Adaugă vremea",
-  "location": "Locație",
-  "weather": "Vreme",
+  "notificationsDenied": "Permisiunea pentru notificări a fost respinsă",
   "notificationsDeniedTitle": "Notificări dezactivate",
   "notificationsDeniedContent": "Notificările sunt dezactivate. Te rugăm să le activezi din setările telefonului pentru a primi remindere zilnice.",
   "openSettings": "Setări",
+
+  "appLock": "Blocare Aplicație",
+  "biometrics": "Biometrie (FaceID / Fingerprint)",
+  "authReason": "Confirmă identitatea pentru a deschide jurnalul",
+  "authReasonToggleOn": "Confirmă identitatea pentru a activa blocarea",
+  "authReasonToggleOff": "Confirmă identitatea pentru a dezactiva blocarea",
+  "authFailed": "Autentificare eșuată",
+  "accessRestricted": "Acces restricționat",
+  "confirmIdentity": "Confirmă identitatea pentru a continua.",
+
+  "dataBackup": "Date și Backup",
+  "myKronoBackup": "Backup-ul meu Krono",
+
+  "exportBackup": "Exportă Backup Complet",
+  "exportZipSubtitle": "Creează un fișier ZIP cu poze și date",
+  "exportingTitle": "Se pregătește backup-ul...",
+  "exportingMessage": "Te rugăm să aștepți în timp ce îți arhivăm amintirile. Acest proces poate dura un minut.",
+  "backupShareSubject": "Backup Krono",
+  "backupShareText": "Iată fișierul de backup al jurnalului Krono.",
+
+  "importBackup": "Importă Backup",
+  "importZipSubtitle": "Restabilește totul dintr-un fișier ZIP",
+  "importingTitle": "Se restaurează...",
+  "importingMessage": "Îți readucem amintirile.",
+
+  "exportPdf": "Exportă ca PDF",
+  "exportPdfSubtitle": "Creează o carte cu amintirile tale",
+  "generatingPdf": "Se generează PDF-ul...",
+  "noEntriesToExport": "Nu există însemnări pentru export.",
+
+  "securityNotSetup": "Securitatea nu este configurată. Te rugăm să activezi un cod PIN sau biometria în setările dispozitivului.",
+
+  "dangerZone": "Danger Zone",
+  "deleteAll": "Șterge toate datele",
   "deleteAllData": "Șterge toate datele",
+  "irreversible": "Acțiune ireversibilă",
+  "confirmDeleteTitle": "Ștergi toate datele?",
+  "confirmDeleteContent": "Sigur vrei să ștergi toate datele? Această acțiune este permanentă.",
+  "deleteConfirmTitle": "Ștergi toate datele?",
+  "deleteConfirmDesc": "Această acțiune va șterge permanent toate amintirile din jurnal. Nu poți anula această operațiune.",
+
+  "saveGallerySuccess": "Imagine salvată în galerie! ✨",
+  "entryDeleted": "Amintire ștearsă",
+  "backupSuccess": "Backup generat cu succes!",
+  "backupExportedSuccess": "Backup exportat cu succes!",
+  "backupRestored": "Backup restaurat cu succes!",
+  "importSuccess": "Datele au fost importate cu succes!",
+  "deleteSuccess": "Toate datele au fost șterse.",
   "deleteAllSuccess": "Toate datele au fost șterse cu succes",
-  "yourMemories": "Amintirile tale",
-  "emptyJournalMessage": "Începe prin a adăuga prima amintire! ✨",
-  "futureDateError": "Nu poți adăuga amintiri pentru viitor! 😊",
-  "emptyJournalTitle": "Jurnalul tău e gol",
-  "createMemory": "Creează o amintire"
+
+  "loadingError": "Eroare la încărcare.",
+  "imageLoadError": "Eroare la încărcarea imaginii",
+  "backupExportError": "Eroare la crearea backup-ului. Te rugăm să încerci din nou.",
+  "backupErrorEmpty": "Backup eșuat: Fișierul generat este gol.",
+  "errorExport": "Eroare la export: {e}",
+  "@errorExport": {
+    "placeholders": {
+      "e": { "type": "String" }
+    }
+  },
+  "errorImport": "Eroare la import: {e}",
+  "@errorImport": {
+    "placeholders": {
+      "e": { "type": "String" }
+    }
+  },
+  "noInternetError": "Conexiunea la internet este necesară pentru vreme și locație.",
+  "@noInternetError": {
+    "description": "Error message shown when the user attempts to fetch metadata without an active internet connection."
+  },
+  "locationDisabled": "Serviciile de locație sunt dezactivate pe acest dispozitiv.",
+  "@locationDisabled": {
+    "description": "Error message shown when the system GPS/Location toggle is turned off."
+  },
+  "locationPermissionDenied": "Permisiunea de locație a fost refuzată.",
+  "@locationPermissionDenied": {
+    "description": "Error message shown when the user refuses to grant location access to the app."
+  },
+  "errorFetchingMetadata": "Nu am putut prelua datele meteo și de locație.",
+  "@errorFetchingMetadata": {
+    "description": "Generic error message for metadata retrieval failures."
+  },
+  "enableLocationMessage": "Te rugăm să activezi accesul la locație în setări pentru a prelua vremea și orașul.",
+
+  "privacyPolicy": "Politică de Confidențialitate",
+  "sendFeedback": "Trimite Feedback",
+  "feedbackSubject": "Feedback Krono",
+  "deviceInfo": "Informații Dispozitiv"
 }

@@ -1,44 +1,76 @@
+// 1. Importurile necesare pentru a citi fișierul de proprietăți.
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
+}
+
+// 2. Încărcăm proprietățile cheii de semnare.
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
 android {
-    namespace = "com.krono.com.krono"
-    compileSdk = 36 //flutter.compileSdkVersion AICI SCHIMBAT
+    namespace = "com.krono.app"
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
-
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    // ✅ FIX: Revenim la blocul 'kotlinOptions'.
+    // Va afișa un avertisment de depreciere, dar este sintaxa corectă
+    // pentru setup-ul tău și VA COMPILA cu succes.
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.krono.com.krono"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
+        applicationId = "com.krono.app"
         minSdk = flutter.minSdkVersion
-        targetSdk = 36 // flutter.targetSdkVersion AICI SCHIMBAT
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
         multiDexEnabled = true
     }
 
+    // 3. Configurare Semnătură (Signing) pentru Release (Corectată)
+    signingConfigs {
+        create("release") {
+            keyAlias = keystoreProperties.getProperty("keyAlias")
+            keyPassword = keystoreProperties.getProperty("keyPassword")
+            storeFile = keystoreProperties.getProperty("storeFile")?.let { path -> file(path) }
+            storePassword = keystoreProperties.getProperty("storePassword")
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+
+        debug {
+            // ✅ FIX: Folosim cheia de release și pentru debug.
+            // Asta previne dezinstalarea aplicației (și ștergerea datelor)
+            // când treci de la un mod la altul.
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }
@@ -49,7 +81,10 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
-
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("androidx.multidex:multidex:2.0.1")
+
+    // Firebase
+    implementation(platform("com.google.firebase:firebase-bom:34.8.0"))
+    implementation("com.google.firebase:firebase-analytics")
 }

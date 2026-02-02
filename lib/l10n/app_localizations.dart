@@ -103,107 +103,65 @@ abstract class AppLocalizations {
   /// **'Krono'**
   String get appTitle;
 
-  /// No description provided for @streakSuffix.
+  /// No description provided for @version.
   ///
   /// In en, this message translates to:
-  /// **'Day Streak!'**
-  String get streakSuffix;
+  /// **'Version'**
+  String get version;
 
-  /// No description provided for @addMemory.
+  /// No description provided for @madeWith.
   ///
   /// In en, this message translates to:
-  /// **'Add Today\'s Memory'**
-  String get addMemory;
+  /// **'Made with ❤️ using Flutter.'**
+  String get madeWith;
 
-  /// No description provided for @quoteTitle.
+  /// No description provided for @copyright.
   ///
   /// In en, this message translates to:
-  /// **'Quote of the Day'**
-  String get quoteTitle;
+  /// **'© 2026 Krono Team. All rights reserved.'**
+  String get copyright;
 
-  /// No description provided for @visualJournal.
+  /// No description provided for @save.
   ///
   /// In en, this message translates to:
-  /// **'Your Visual Journal'**
-  String get visualJournal;
+  /// **'Save'**
+  String get save;
 
-  /// No description provided for @noPhotos.
+  /// No description provided for @cancel.
   ///
   /// In en, this message translates to:
-  /// **'No photos yet.'**
-  String get noPhotos;
+  /// **'Cancel'**
+  String get cancel;
 
-  /// No description provided for @editEntry.
+  /// No description provided for @delete.
   ///
   /// In en, this message translates to:
-  /// **'Edit memory'**
-  String get editEntry;
+  /// **'Delete'**
+  String get delete;
 
-  /// No description provided for @moodTitle.
+  /// No description provided for @retry.
   ///
   /// In en, this message translates to:
-  /// **'How was today?'**
-  String get moodTitle;
+  /// **'Retry'**
+  String get retry;
 
-  /// No description provided for @takePhoto.
+  /// No description provided for @retake.
   ///
   /// In en, this message translates to:
-  /// **'Take a photo'**
-  String get takePhoto;
+  /// **'Retake'**
+  String get retake;
 
-  /// No description provided for @pickGallery.
+  /// No description provided for @processing.
   ///
   /// In en, this message translates to:
-  /// **'Pick from gallery'**
-  String get pickGallery;
+  /// **'Processing…'**
+  String get processing;
 
-  /// No description provided for @myMood.
+  /// No description provided for @unlock.
   ///
   /// In en, this message translates to:
-  /// **'Your mood'**
-  String get myMood;
-
-  /// No description provided for @noteHint.
-  ///
-  /// In en, this message translates to:
-  /// **'What interesting happened?'**
-  String get noteHint;
-
-  /// No description provided for @saveDay.
-  ///
-  /// In en, this message translates to:
-  /// **'Save Day'**
-  String get saveDay;
-
-  /// No description provided for @moodLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Daily Mood'**
-  String get moodLabel;
-
-  /// No description provided for @journal.
-  ///
-  /// In en, this message translates to:
-  /// **'Journal'**
-  String get journal;
-
-  /// No description provided for @noNote.
-  ///
-  /// In en, this message translates to:
-  /// **'No note for this day.'**
-  String get noNote;
-
-  /// No description provided for @streakLongMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'You\'re phenomenal! You\'ve saved memories for {count} days.'**
-  String streakLongMessage(Object count);
-
-  /// No description provided for @startFirstDay.
-  ///
-  /// In en, this message translates to:
-  /// **'Start your first day!'**
-  String get startFirstDay;
+  /// **'Unlock'**
+  String get unlock;
 
   /// No description provided for @year.
   ///
@@ -235,209 +193,119 @@ abstract class AppLocalizations {
   /// **'days'**
   String get days;
 
-  /// No description provided for @settings.
+  /// No description provided for @yourMemories.
   ///
   /// In en, this message translates to:
-  /// **'Settings'**
-  String get settings;
+  /// **'Your Memories'**
+  String get yourMemories;
 
-  /// No description provided for @personalization.
+  /// No description provided for @quoteTitle.
   ///
   /// In en, this message translates to:
-  /// **'Personalization'**
-  String get personalization;
+  /// **'Quote of the Day'**
+  String get quoteTitle;
 
-  /// No description provided for @appTheme.
+  /// No description provided for @streakSuffix.
   ///
   /// In en, this message translates to:
-  /// **'App Theme'**
-  String get appTheme;
+  /// **'Day Streak!'**
+  String get streakSuffix;
 
-  /// No description provided for @chooseAccent.
+  /// No description provided for @streakLongMessage.
   ///
   /// In en, this message translates to:
-  /// **'Choose accent color'**
-  String get chooseAccent;
+  /// **'You\'re phenomenal! You\'ve saved memories for {count} days.'**
+  String streakLongMessage(Object count);
 
-  /// No description provided for @darkMode.
+  /// No description provided for @startFirstDay.
   ///
   /// In en, this message translates to:
-  /// **'Dark Mode'**
-  String get darkMode;
+  /// **'Start your first day!'**
+  String get startFirstDay;
 
-  /// No description provided for @dataBackup.
+  /// No description provided for @emptyJournalTitle.
   ///
   /// In en, this message translates to:
-  /// **'Data & Backup'**
-  String get dataBackup;
+  /// **'Your journal is empty'**
+  String get emptyJournalTitle;
 
-  /// No description provided for @exportBackup.
+  /// No description provided for @emptyJournalMessage.
   ///
   /// In en, this message translates to:
-  /// **'Export Full Backup'**
-  String get exportBackup;
+  /// **'Start by adding your first memory! ✨'**
+  String get emptyJournalMessage;
 
-  /// No description provided for @exportZipSubtitle.
+  /// No description provided for @createMemory.
   ///
   /// In en, this message translates to:
-  /// **'Create a ZIP file with photos and data'**
-  String get exportZipSubtitle;
+  /// **'Create a memory'**
+  String get createMemory;
 
-  /// No description provided for @importBackup.
+  /// No description provided for @startFirstMemory.
   ///
   /// In en, this message translates to:
-  /// **'Import Backup'**
-  String get importBackup;
+  /// **'Start by adding your first memory! ✨'**
+  String get startFirstMemory;
 
-  /// No description provided for @importZipSubtitle.
+  /// No description provided for @journal.
   ///
   /// In en, this message translates to:
-  /// **'Restore everything from a ZIP file'**
-  String get importZipSubtitle;
+  /// **'Journal'**
+  String get journal;
 
-  /// No description provided for @exportPdf.
+  /// No description provided for @visualJournal.
   ///
   /// In en, this message translates to:
-  /// **'Export as PDF'**
-  String get exportPdf;
+  /// **'Your Visual Journal'**
+  String get visualJournal;
 
-  /// No description provided for @exportPdfSubtitle.
+  /// No description provided for @addMemory.
   ///
   /// In en, this message translates to:
-  /// **'Create a book of your memories'**
-  String get exportPdfSubtitle;
+  /// **'Add Today\'s Memory'**
+  String get addMemory;
 
-  /// No description provided for @info.
+  /// No description provided for @editEntry.
   ///
   /// In en, this message translates to:
-  /// **'Information'**
-  String get info;
+  /// **'Edit memory'**
+  String get editEntry;
 
-  /// No description provided for @appLock.
+  /// No description provided for @saveDay.
   ///
   /// In en, this message translates to:
-  /// **'App Lock'**
-  String get appLock;
+  /// **'Save Day'**
+  String get saveDay;
 
-  /// No description provided for @biometrics.
+  /// No description provided for @writeMemory.
   ///
   /// In en, this message translates to:
-  /// **'Biometrics (FaceID / Fingerprint)'**
-  String get biometrics;
+  /// **'Write a memory...'**
+  String get writeMemory;
 
-  /// No description provided for @aboutKrono.
+  /// No description provided for @noteHint.
   ///
   /// In en, this message translates to:
-  /// **'About Krono'**
-  String get aboutKrono;
+  /// **'What interesting happened?'**
+  String get noteHint;
 
-  /// No description provided for @dangerZone.
+  /// No description provided for @noNote.
   ///
   /// In en, this message translates to:
-  /// **'Danger Zone'**
-  String get dangerZone;
+  /// **'No note for this day.'**
+  String get noNote;
 
-  /// No description provided for @deleteAll.
+  /// No description provided for @noPhotos.
   ///
   /// In en, this message translates to:
-  /// **'Delete All Data'**
-  String get deleteAll;
+  /// **'No photos yet.'**
+  String get noPhotos;
 
-  /// No description provided for @irreversible.
+  /// No description provided for @futureDateError.
   ///
   /// In en, this message translates to:
-  /// **'Irreversible action'**
-  String get irreversible;
-
-  /// No description provided for @version.
-  ///
-  /// In en, this message translates to:
-  /// **'Version'**
-  String get version;
-
-  /// No description provided for @aboutDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Krono is your daily visual journal. Designed to be simple, private, and fast.'**
-  String get aboutDescription;
-
-  /// No description provided for @madeWith.
-  ///
-  /// In en, this message translates to:
-  /// **'Made with ❤️ using Flutter.'**
-  String get madeWith;
-
-  /// No description provided for @chooseTheme.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose Theme'**
-  String get chooseTheme;
-
-  /// No description provided for @cancel.
-  ///
-  /// In en, this message translates to:
-  /// **'Cancel'**
-  String get cancel;
-
-  /// No description provided for @delete.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete'**
-  String get delete;
-
-  /// No description provided for @deleteConfirmTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete all data?'**
-  String get deleteConfirmTitle;
-
-  /// No description provided for @deleteConfirmDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'This action will permanently delete all memories from the journal. You cannot undo this operation.'**
-  String get deleteConfirmDesc;
-
-  /// No description provided for @backupSuccess.
-  ///
-  /// In en, this message translates to:
-  /// **'Backup generated successfully!'**
-  String get backupSuccess;
-
-  /// No description provided for @importSuccess.
-  ///
-  /// In en, this message translates to:
-  /// **'Data imported successfully!'**
-  String get importSuccess;
-
-  /// No description provided for @deleteSuccess.
-  ///
-  /// In en, this message translates to:
-  /// **'All data has been deleted.'**
-  String get deleteSuccess;
-
-  /// No description provided for @errorExport.
-  ///
-  /// In en, this message translates to:
-  /// **'Export error: {e}'**
-  String errorExport(String e);
-
-  /// No description provided for @errorImport.
-  ///
-  /// In en, this message translates to:
-  /// **'Import error: {e}'**
-  String errorImport(Object e);
-
-  /// Title for the multiple memories modal
-  ///
-  /// In en, this message translates to:
-  /// **'Memories from {date}'**
-  String memoriesFrom(String date);
-
-  /// Label for the long-press preview popup
-  ///
-  /// In en, this message translates to:
-  /// **'{emoji} Memory'**
-  String memoryPopup(String emoji);
+  /// **'You can\'t add memories for the future! 😊'**
+  String get futureDateError;
 
   /// No description provided for @camera.
   ///
@@ -451,17 +319,83 @@ abstract class AppLocalizations {
   /// **'Gallery'**
   String get gallery;
 
-  /// No description provided for @writeMemory.
+  /// No description provided for @takePhoto.
   ///
   /// In en, this message translates to:
-  /// **'Write a memory...'**
-  String get writeMemory;
+  /// **'Take a photo'**
+  String get takePhoto;
 
-  /// No description provided for @saveGallerySuccess.
+  /// No description provided for @pickGallery.
   ///
   /// In en, this message translates to:
-  /// **'Image saved to gallery! ✨'**
-  String get saveGallerySuccess;
+  /// **'Pick from gallery'**
+  String get pickGallery;
+
+  /// No description provided for @moodTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How was today?'**
+  String get moodTitle;
+
+  /// No description provided for @myMood.
+  ///
+  /// In en, this message translates to:
+  /// **'Your mood'**
+  String get myMood;
+
+  /// No description provided for @yourMood.
+  ///
+  /// In en, this message translates to:
+  /// **'Your mood'**
+  String get yourMood;
+
+  /// No description provided for @moodLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Mood'**
+  String get moodLabel;
+
+  /// No description provided for @location.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get location;
+
+  /// No description provided for @addLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Add location'**
+  String get addLocation;
+
+  /// No description provided for @weather.
+  ///
+  /// In en, this message translates to:
+  /// **'Weather'**
+  String get weather;
+
+  /// No description provided for @addWeather.
+  ///
+  /// In en, this message translates to:
+  /// **'Add weather'**
+  String get addWeather;
+
+  /// Title for the multiple memories modal
+  ///
+  /// In en, this message translates to:
+  /// **'Memories from {date}'**
+  String memoriesFrom(String date);
+
+  /// Label for the long-press preview popup
+  ///
+  /// In en, this message translates to:
+  /// **'{emoji} Memory'**
+  String memoryPopup(String emoji);
+
+  /// No description provided for @memoriesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 memory} other{{count} memories}}'**
+  String memoriesCount(num count);
 
   /// No description provided for @deleteEntryTitle.
   ///
@@ -475,125 +409,65 @@ abstract class AppLocalizations {
   /// **'This action is permanent and will also delete the photo.'**
   String get deleteEntryDesc;
 
-  /// No description provided for @entryDeleted.
+  /// No description provided for @settings.
   ///
   /// In en, this message translates to:
-  /// **'Memory deleted'**
-  String get entryDeleted;
+  /// **'Settings'**
+  String get settings;
 
-  /// No description provided for @yourMood.
+  /// No description provided for @personalization.
   ///
   /// In en, this message translates to:
-  /// **'Your mood'**
-  String get yourMood;
+  /// **'Personalization'**
+  String get personalization;
 
-  /// No description provided for @language.
+  /// No description provided for @info.
   ///
   /// In en, this message translates to:
-  /// **'Language'**
-  String get language;
+  /// **'Information'**
+  String get info;
 
-  /// No description provided for @chooseLanguage.
+  /// No description provided for @aboutKrono.
   ///
   /// In en, this message translates to:
-  /// **'Choose Language'**
-  String get chooseLanguage;
+  /// **'About Krono'**
+  String get aboutKrono;
 
-  /// No description provided for @authReason.
+  /// No description provided for @aboutKronoDetail.
   ///
   /// In en, this message translates to:
-  /// **'Confirm identity to open the journal'**
-  String get authReason;
+  /// **'Krono is your personal space for thoughts and memories. Designed with privacy and simplicity in mind, it helps you capture life\'s moments one day at a time. Thank you for choosing us to be part of your journey!'**
+  String get aboutKronoDetail;
 
-  /// No description provided for @accessRestricted.
+  /// No description provided for @aboutDescription.
   ///
   /// In en, this message translates to:
-  /// **'Access Restricted'**
-  String get accessRestricted;
+  /// **'Krono is your daily visual journal. Designed to be simple, private, and fast.'**
+  String get aboutDescription;
 
-  /// No description provided for @confirmIdentity.
+  /// No description provided for @appTheme.
   ///
   /// In en, this message translates to:
-  /// **'Please confirm your identity to continue.'**
-  String get confirmIdentity;
+  /// **'App Theme'**
+  String get appTheme;
 
-  /// No description provided for @unlock.
+  /// No description provided for @chooseTheme.
   ///
   /// In en, this message translates to:
-  /// **'Unlock'**
-  String get unlock;
+  /// **'Choose Theme'**
+  String get chooseTheme;
 
-  /// No description provided for @noEntriesToExport.
+  /// No description provided for @chooseAccent.
   ///
   /// In en, this message translates to:
-  /// **'No entries found to export.'**
-  String get noEntriesToExport;
+  /// **'Choose accent color'**
+  String get chooseAccent;
 
-  /// No description provided for @generatingPdf.
+  /// No description provided for @darkMode.
   ///
   /// In en, this message translates to:
-  /// **'Generating PDF...'**
-  String get generatingPdf;
-
-  /// No description provided for @memoriesCount.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 memory} other{{count} memories}}'**
-  String memoriesCount(num count);
-
-  /// No description provided for @notifications.
-  ///
-  /// In en, this message translates to:
-  /// **'Notifications'**
-  String get notifications;
-
-  /// No description provided for @dailyReminder.
-  ///
-  /// In en, this message translates to:
-  /// **'Daily Reminder'**
-  String get dailyReminder;
-
-  /// No description provided for @reminderSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Get a notification so you don\'t forget to save your memory.'**
-  String get reminderSubtitle;
-
-  /// No description provided for @reminderNotificationTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Time for Krono 📸'**
-  String get reminderNotificationTitle;
-
-  /// No description provided for @reminderNotificationBody.
-  ///
-  /// In en, this message translates to:
-  /// **'How was your day? Don\'t forget to add a photo and some thoughts!'**
-  String get reminderNotificationBody;
-
-  /// No description provided for @notificationsDenied.
-  ///
-  /// In en, this message translates to:
-  /// **'Notification permission denied'**
-  String get notificationsDenied;
-
-  /// No description provided for @authReasonToggleOn.
-  ///
-  /// In en, this message translates to:
-  /// **'Confirm identity to enable app lock'**
-  String get authReasonToggleOn;
-
-  /// No description provided for @authReasonToggleOff.
-  ///
-  /// In en, this message translates to:
-  /// **'Confirm identity to disable app lock'**
-  String get authReasonToggleOff;
-
-  /// No description provided for @authFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Authentication failed'**
-  String get authFailed;
+  /// **'Dark Mode'**
+  String get darkMode;
 
   /// No description provided for @themeKrono.
   ///
@@ -643,6 +517,48 @@ abstract class AppLocalizations {
   /// **'Aurora'**
   String get themeAurora;
 
+  /// No description provided for @language.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get language;
+
+  /// No description provided for @chooseLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Language'**
+  String get chooseLanguage;
+
+  /// No description provided for @notifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notifications;
+
+  /// No description provided for @dailyReminder.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Reminder'**
+  String get dailyReminder;
+
+  /// No description provided for @reminderSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Get a notification so you don\'t forget to save your memory.'**
+  String get reminderSubtitle;
+
+  /// No description provided for @reminderNotificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Time for Krono 📸'**
+  String get reminderNotificationTitle;
+
+  /// No description provided for @reminderNotificationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'How was your day? Don\'t forget to add a photo and some thoughts!'**
+  String get reminderNotificationBody;
+
   /// No description provided for @notificationTitle.
   ///
   /// In en, this message translates to:
@@ -655,83 +571,11 @@ abstract class AppLocalizations {
   /// **'One photo today, a thousand memories tomorrow.'**
   String get notificationBody;
 
-  /// No description provided for @save.
+  /// No description provided for @notificationsDenied.
   ///
   /// In en, this message translates to:
-  /// **'Save'**
-  String get save;
-
-  /// No description provided for @aboutKronoDetail.
-  ///
-  /// In en, this message translates to:
-  /// **'Krono is your personal space for thoughts and memories. Designed with privacy and simplicity in mind, it helps you capture life\'s moments one day at a time. Thank you for choosing us to be part of your journey!'**
-  String get aboutKronoDetail;
-
-  /// No description provided for @copyright.
-  ///
-  /// In en, this message translates to:
-  /// **'© 2026 Krono Team. All rights reserved.'**
-  String get copyright;
-
-  /// No description provided for @backupRestored.
-  ///
-  /// In en, this message translates to:
-  /// **'Backup restored successfully!'**
-  String get backupRestored;
-
-  /// No description provided for @confirmDeleteTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete all data?'**
-  String get confirmDeleteTitle;
-
-  /// No description provided for @confirmDeleteContent.
-  ///
-  /// In en, this message translates to:
-  /// **'Are you sure you want to delete all data? This action is permanent.'**
-  String get confirmDeleteContent;
-
-  /// No description provided for @startFirstMemory.
-  ///
-  /// In en, this message translates to:
-  /// **'Start by adding your first memory! ✨'**
-  String get startFirstMemory;
-
-  /// No description provided for @loadingError.
-  ///
-  /// In en, this message translates to:
-  /// **'Error loading data.'**
-  String get loadingError;
-
-  /// No description provided for @myKronoBackup.
-  ///
-  /// In en, this message translates to:
-  /// **'My Krono Backup'**
-  String get myKronoBackup;
-
-  /// No description provided for @addLocation.
-  ///
-  /// In en, this message translates to:
-  /// **'Add location'**
-  String get addLocation;
-
-  /// No description provided for @addWeather.
-  ///
-  /// In en, this message translates to:
-  /// **'Add weather'**
-  String get addWeather;
-
-  /// No description provided for @location.
-  ///
-  /// In en, this message translates to:
-  /// **'Location'**
-  String get location;
-
-  /// No description provided for @weather.
-  ///
-  /// In en, this message translates to:
-  /// **'Weather'**
-  String get weather;
+  /// **'Notification permission denied'**
+  String get notificationsDenied;
 
   /// No description provided for @notificationsDeniedTitle.
   ///
@@ -751,11 +595,245 @@ abstract class AppLocalizations {
   /// **'Open Settings'**
   String get openSettings;
 
+  /// No description provided for @appLock.
+  ///
+  /// In en, this message translates to:
+  /// **'App Lock'**
+  String get appLock;
+
+  /// No description provided for @biometrics.
+  ///
+  /// In en, this message translates to:
+  /// **'Biometrics (FaceID / Fingerprint)'**
+  String get biometrics;
+
+  /// No description provided for @authReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm identity to open the journal'**
+  String get authReason;
+
+  /// No description provided for @authReasonToggleOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm identity to enable app lock'**
+  String get authReasonToggleOn;
+
+  /// No description provided for @authReasonToggleOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm identity to disable app lock'**
+  String get authReasonToggleOff;
+
+  /// No description provided for @authFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication failed'**
+  String get authFailed;
+
+  /// No description provided for @accessRestricted.
+  ///
+  /// In en, this message translates to:
+  /// **'Access Restricted'**
+  String get accessRestricted;
+
+  /// No description provided for @confirmIdentity.
+  ///
+  /// In en, this message translates to:
+  /// **'Please confirm your identity to continue.'**
+  String get confirmIdentity;
+
+  /// No description provided for @dataBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Data & Backup'**
+  String get dataBackup;
+
+  /// No description provided for @myKronoBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'My Krono Backup'**
+  String get myKronoBackup;
+
+  /// No description provided for @exportBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Full Backup'**
+  String get exportBackup;
+
+  /// No description provided for @exportZipSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a ZIP file with photos and data'**
+  String get exportZipSubtitle;
+
+  /// No description provided for @exportingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing Backup...'**
+  String get exportingTitle;
+
+  /// No description provided for @exportingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Please wait while we compress your memories. This may take a minute.'**
+  String get exportingMessage;
+
+  /// No description provided for @backupShareSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'Krono Backup'**
+  String get backupShareSubject;
+
+  /// No description provided for @backupShareText.
+  ///
+  /// In en, this message translates to:
+  /// **'Here is my Krono journal backup file.'**
+  String get backupShareText;
+
+  /// No description provided for @importBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Backup'**
+  String get importBackup;
+
+  /// No description provided for @importZipSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore everything from a ZIP file'**
+  String get importZipSubtitle;
+
+  /// No description provided for @importingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restoring...'**
+  String get importingTitle;
+
+  /// No description provided for @importingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'We are bringing your memories back.'**
+  String get importingMessage;
+
+  /// No description provided for @exportPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Export as PDF'**
+  String get exportPdf;
+
+  /// No description provided for @exportPdfSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a book of your memories'**
+  String get exportPdfSubtitle;
+
+  /// No description provided for @generatingPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Generating PDF...'**
+  String get generatingPdf;
+
+  /// No description provided for @noEntriesToExport.
+  ///
+  /// In en, this message translates to:
+  /// **'No entries found to export.'**
+  String get noEntriesToExport;
+
+  /// No description provided for @securityNotSetup.
+  ///
+  /// In en, this message translates to:
+  /// **'Security not set up. Please enable a PIN or biometrics in your device settings.'**
+  String get securityNotSetup;
+
+  /// No description provided for @dangerZone.
+  ///
+  /// In en, this message translates to:
+  /// **'Danger Zone'**
+  String get dangerZone;
+
+  /// No description provided for @deleteAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete All Data'**
+  String get deleteAll;
+
   /// No description provided for @deleteAllData.
   ///
   /// In en, this message translates to:
   /// **'Delete All Data'**
   String get deleteAllData;
+
+  /// No description provided for @irreversible.
+  ///
+  /// In en, this message translates to:
+  /// **'Irreversible action'**
+  String get irreversible;
+
+  /// No description provided for @confirmDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete all data?'**
+  String get confirmDeleteTitle;
+
+  /// No description provided for @confirmDeleteContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete all data? This action is permanent.'**
+  String get confirmDeleteContent;
+
+  /// No description provided for @deleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete all data?'**
+  String get deleteConfirmTitle;
+
+  /// No description provided for @deleteConfirmDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'This action will permanently delete all memories from the journal. You cannot undo this operation.'**
+  String get deleteConfirmDesc;
+
+  /// No description provided for @saveGallerySuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Image saved to gallery! ✨'**
+  String get saveGallerySuccess;
+
+  /// No description provided for @entryDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory deleted'**
+  String get entryDeleted;
+
+  /// No description provided for @backupSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup generated successfully!'**
+  String get backupSuccess;
+
+  /// No description provided for @backupExportedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup exported successfully!'**
+  String get backupExportedSuccess;
+
+  /// No description provided for @backupRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup restored successfully!'**
+  String get backupRestored;
+
+  /// No description provided for @importSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Data imported successfully!'**
+  String get importSuccess;
+
+  /// No description provided for @deleteSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'All data has been deleted.'**
+  String get deleteSuccess;
 
   /// No description provided for @deleteAllSuccess.
   ///
@@ -763,35 +841,95 @@ abstract class AppLocalizations {
   /// **'All data has been successfully deleted'**
   String get deleteAllSuccess;
 
-  /// No description provided for @yourMemories.
+  /// No description provided for @loadingError.
   ///
   /// In en, this message translates to:
-  /// **'Your Memories'**
-  String get yourMemories;
+  /// **'Error loading data.'**
+  String get loadingError;
 
-  /// No description provided for @emptyJournalMessage.
+  /// No description provided for @imageLoadError.
   ///
   /// In en, this message translates to:
-  /// **'Start by adding your first memory! ✨'**
-  String get emptyJournalMessage;
+  /// **'Error loading image'**
+  String get imageLoadError;
 
-  /// No description provided for @futureDateError.
+  /// No description provided for @backupExportError.
   ///
   /// In en, this message translates to:
-  /// **'You can\'t add memories for the future! 😊'**
-  String get futureDateError;
+  /// **'Failed to create backup. Please try again.'**
+  String get backupExportError;
 
-  /// No description provided for @emptyJournalTitle.
+  /// No description provided for @backupErrorEmpty.
   ///
   /// In en, this message translates to:
-  /// **'Your journal is empty'**
-  String get emptyJournalTitle;
+  /// **'Backup failed: Generated file is empty.'**
+  String get backupErrorEmpty;
 
-  /// No description provided for @createMemory.
+  /// No description provided for @errorExport.
   ///
   /// In en, this message translates to:
-  /// **'Create a memory'**
-  String get createMemory;
+  /// **'Export error: {e}'**
+  String errorExport(String e);
+
+  /// No description provided for @errorImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Import error: {e}'**
+  String errorImport(String e);
+
+  /// Error message shown when the user attempts to fetch metadata without an active internet connection.
+  ///
+  /// In en, this message translates to:
+  /// **'Internet connection required for weather and location.'**
+  String get noInternetError;
+
+  /// Error message shown when the system GPS/Location toggle is turned off.
+  ///
+  /// In en, this message translates to:
+  /// **'Location services are disabled on this device.'**
+  String get locationDisabled;
+
+  /// Error message shown when the user refuses to grant location access to the app.
+  ///
+  /// In en, this message translates to:
+  /// **'Location permission was denied.'**
+  String get locationPermissionDenied;
+
+  /// Generic error message for metadata retrieval failures.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not fetch weather and location data.'**
+  String get errorFetchingMetadata;
+
+  /// No description provided for @enableLocationMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enable location access in settings to fetch weather and city name.'**
+  String get enableLocationMessage;
+
+  /// No description provided for @privacyPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get privacyPolicy;
+
+  /// No description provided for @sendFeedback.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Feedback'**
+  String get sendFeedback;
+
+  /// No description provided for @feedbackSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'Krono Feedback'**
+  String get feedbackSubject;
+
+  /// No description provided for @deviceInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Device Info'**
+  String get deviceInfo;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
