@@ -67,7 +67,7 @@ class NotificationService {
     }
 
     const AndroidInitializationSettings androidSettings =
-    AndroidInitializationSettings('notification_icon');
+    AndroidInitializationSettings('ic_notification');
 
     const DarwinInitializationSettings iosSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
@@ -140,7 +140,7 @@ class NotificationService {
         scheduledDate,
         const NotificationDetails(
           android: AndroidNotificationDetails(
-            'daily_reminder_channel_v5',
+            'daily_reminder_channel_v10',
             'Jurnal Zilnic',
             importance: Importance.max,
             priority: Priority.high,

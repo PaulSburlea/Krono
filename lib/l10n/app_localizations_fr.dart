@@ -57,6 +57,53 @@ class AppLocalizationsFr extends AppLocalizations {
   String get days => 'jours';
 
   @override
+  String get streakDaySingular => 'Jour de Série';
+
+  @override
+  String get streakDaysPlural => 'Jours de Série';
+
+  @override
+  String get thisWeek => 'Cette Semaine';
+
+  @override
+  String get nextMilestone => 'Prochain jalon';
+
+  @override
+  String daysRemaining(Object count) {
+    return '$count jours restants';
+  }
+
+  @override
+  String get streakFirstDay => 'Excellent début ! Revenez demain ! 🌟';
+
+  @override
+  String get streakWeekProgress => 'Vous créez une habitude ! Continuez ! 💪';
+
+  @override
+  String get streakFirstWeek => 'Une semaine ! Vous êtes en feu ! 🔥';
+
+  @override
+  String get streakMonthProgress => 'Cohérence incroyable ! Ne cassez pas la chaîne ! ⛓️';
+
+  @override
+  String get streakFirstMonth => '30 jours ! Vous êtes un champion de la mémoire ! 🏆';
+
+  @override
+  String get streakHundredProgress => 'Vous êtes imbattable ! Continuez ! 🚀';
+
+  @override
+  String get streakHundred => '100 jours ! Statut légendaire atteint ! ⭐';
+
+  @override
+  String get streakYearProgress => 'Vous êtes un maître du journal ! Presque là ! 👑';
+
+  @override
+  String get streakFirstYear => '365 jours ! Une année complète de souvenirs ! 🎉';
+
+  @override
+  String get streakLegendary => 'Vous êtes une légende ! Votre dévouement inspire ! 💎';
+
+  @override
   String get yourMemories => 'Vos Souvenirs';
 
   @override
@@ -460,4 +507,49 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get onboardingDesc2 => 'Vos souvenirs restent sur votre appareil. Pas de suivi, pas de cloud, pas de collecte de données.';
+
+  @override
+  String get themeCrimson => 'Cramoisi';
+
+  @override
+  String get themeAmethyst => 'Améthyste';
+
+  @override
+  String get themeGold => 'Or';
+
+  @override
+  String get themeTurquoise => 'Turquoise';
+
+  @override
+  String get themeRose => 'Rose';
+
+  @override
+  String get themeSapphire => 'Saphir';
+
+  @override
+  String get update => 'Mettre à jour';
+
+  @override
+  String get remove => 'Supprimer';
+
+  @override
+  String get discardChangesTitle => 'Abandonner ce souvenir ?';
+
+  @override
+  String get discardChangesMessage => 'Vous n\'avez pas sauvegardé. Si vous quittez, cette entrée sera définitivement effacée.';
+
+  @override
+  String get discard => 'Abandonner';
+
+  @override
+  String get notificationPromptTitle => 'Gardez la série en vie !';
+
+  @override
+  String get notificationPromptBody => 'Bravo pour votre premier souvenir ! Définissez un rappel quotidien pour ne jamais oublier de capturer l\'instant.';
+
+  @override
+  String get maybeLater => 'Plus tard';
+
+  @override
+  String get setReminder => 'Définir un rappel';
 }

@@ -8,10 +8,10 @@ import '../../../core/providers/notification_provider.dart';
 import '../../settings/providers/theme_provider.dart';
 import '../../../core/utils/logger_service.dart';
 
-import '../../journal/presentation/add_entry_screen.dart';
 import 'home_screen.dart';
 import '../../settings/presentation/settings_screen.dart';
-import 'widgets/camera/custom_camera_screen.dart';
+import 'widgets/add_button.dart';
+import 'add_entry_screen.dart'; // Required for navigation
 
 /// Manages the state of the bottom navigation bar index.
 class NavigationNotifier extends Notifier<int> {
@@ -30,15 +30,51 @@ final navigationProvider = NotifierProvider<NavigationNotifier, int>(NavigationN
 
 /// The main wrapper widget for the application's core screens.
 ///
-/// It handles the bottom navigation dock, screen switching, and global listeners
-/// for locale and theme changes. It uses an [IndexedStack] to preserve the state
-/// of each screen.
-class MainWrapper extends ConsumerWidget {
+/// It handles the bottom navigation dock, screen switching, and global listeners.
+/// It also checks for unfinished drafts on startup to restore the user's session.
+class MainWrapper extends ConsumerStatefulWidget {
   /// Creates the main application wrapper.
   const MainWrapper({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MainWrapper> createState() => _MainWrapperState();
+}
+
+class _MainWrapperState extends ConsumerState<MainWrapper> {
+  @override
+  void initState() {
+    super.initState();
+
+    // Check for drafts immediately after the first frame is rendered.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAndRestoreDraft();
+    });
+  }
+
+  /// Checks if a draft exists and navigates to the AddEntryScreen if found.
+  Future<void> _checkAndRestoreDraft() async {
+    final prefs = ref.read(sharedPreferencesProvider);
+
+    // Check if the specific draft key exists in storage
+    if (prefs.containsKey('journal_draft')) {
+      Logger.info('Unfinished draft detected on startup. Auto-navigating to AddEntryScreen.');
+
+      if (!mounted) return;
+
+      // Navigate instantly (zero duration) to make it feel like the app resumed state.
+      Navigator.push(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) => const AddEntryScreen(),
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final selectedIndex = ref.watch(navigationProvider);
 
     // Listen to theme changes to trigger a rebuild of the dock when switching modes.
@@ -95,9 +131,6 @@ class MainWrapper extends ConsumerWidget {
 }
 
 /// A custom floating bottom navigation dock with a "fake glass" effect.
-///
-/// It uses opacity and gradients to simulate a glass look without the performance
-/// cost of a real-time blur filter.
 class _FloatingDock extends ConsumerWidget {
   final int currentIndex;
   final bool isDark;
@@ -111,21 +144,47 @@ class _FloatingDock extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // ✅ Detectare text scale și dimensiune ecran
+    final textScaleFactor = MediaQuery.textScalerOf(context).scale(1.0);
+    final screenWidth = MediaQuery.sizeOf(context).width;
+
+    // ✅ Calculare dimensiuni responsive
+    final isLargeText = textScaleFactor > 1.15;
+    final isSmallScreen = screenWidth < 360;
+
+    // Dock height se adaptează la text scale
+    final dockHeight = isLargeText
+        ? 80.0
+        : isSmallScreen
+        ? 68.0
+        : 72.0;
+
+    // Border radius proporțional cu height
+    final borderRadius = dockHeight / 2;
+
+    // Horizontal padding se adaptează
+    final horizontalPadding = isLargeText ? 12.0 : isSmallScreen ? 6.0 : 8.0;
+
+    // Margin-uri responsive
+    final horizontalMargin = isSmallScreen ? 16.0 : 24.0;
+
     final double systemBottomPadding = MediaQuery.of(context).padding.bottom;
     final double dockMarginBottom = systemBottomPadding > 0 ? systemBottomPadding + 20 : 24.0;
 
-    // Increased opacity for a more matte, solid feel
-    final double opacity = isDark ? 0.98 : 0.98;
+    final double opacity = 0.98;
     final Color glassBaseColor = colorScheme.surface;
 
     return Align(
       alignment: Alignment.bottomCenter,
       child: Container(
-        margin: EdgeInsets.only(bottom: dockMarginBottom, left: 24, right: 24),
-        height: 72,
+        margin: EdgeInsets.only(
+          bottom: dockMarginBottom,
+          left: horizontalMargin,
+          right: horizontalMargin,
+        ),
+        height: dockHeight,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(36),
-          // Subtle gradient for a "frosted" look without being too transparent
+          borderRadius: BorderRadius.circular(borderRadius),
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -135,7 +194,6 @@ class _FloatingDock extends ConsumerWidget {
             ],
             stops: const [0.0, 1.0],
           ),
-          // A subtle border to define the edges like real glass
           border: Border.all(
             color: isDark
                 ? Colors.white.withValues(alpha: 0.15)
@@ -152,25 +210,26 @@ class _FloatingDock extends ConsumerWidget {
           ],
         ),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
+          padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
           child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _DockItem(icon: Icons.grid_view_rounded, isSelected: currentIndex == 0, onTap: () => _handleNav(ref, 0)),
+                _DockItem(
+                  icon: Icons.grid_view_rounded,
+                  isSelected: currentIndex == 0,
+                  onTap: () => _handleNav(ref, 0),
+                  isLargeText: isLargeText,
+                ),
 
-                // Stats button placeholder (commented out as per requirements)
-                /*
-                _DockItem(icon: Icons.bar_chart_rounded, isSelected: currentIndex == 1, onTap: () => _handleNav(ref, 1)),
-                */
+                // The central AddButton imported from widgets/add_button.dart
+                AddButton(isLargeText: isLargeText),
 
-                const _AddButton(),
-
-                // Video Recap button placeholder (commented out as per requirements)
-                /*
-                _DockItem(icon: Icons.movie_filter_rounded, isSelected: currentIndex == 2, onTap: () => _handleNav(ref, 2)),
-                */
-
-                _DockItem(icon: Icons.settings_rounded, isSelected: currentIndex == 3, onTap: () => _handleNav(ref, 3)),
+                _DockItem(
+                  icon: Icons.settings_rounded,
+                  isSelected: currentIndex == 3,
+                  onTap: () => _handleNav(ref, 3),
+                  isLargeText: isLargeText,
+                ),
               ]
           ),
         ),
@@ -189,12 +248,28 @@ class _DockItem extends StatelessWidget {
   final IconData icon;
   final bool isSelected;
   final VoidCallback onTap;
+  final bool isLargeText;
 
-  const _DockItem({required this.icon, required this.isSelected, required this.onTap});
+  const _DockItem({
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+    this.isLargeText = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+
+    // ✅ Icon size responsive
+    final iconSize = isLargeText ? 28.0 : 26.0;
+
+    // ✅ Padding responsive
+    final horizontalPadding = isLargeText ? 14.0 : 12.0;
+    final verticalPadding = isLargeText ? 10.0 : 8.0;
+
+    // ✅ Indicator size
+    final indicatorSize = isLargeText ? 5.0 : 4.0;
 
     return Material(
       color: Colors.transparent,
@@ -204,20 +279,25 @@ class _DockItem extends StatelessWidget {
         splashColor: colorScheme.primary.withValues(alpha: 0.1),
         highlightColor: colorScheme.primary.withValues(alpha: 0.05),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: EdgeInsets.symmetric(
+            horizontal: horizontalPadding,
+            vertical: verticalPadding,
+          ),
           child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                    icon,
-                    color: isSelected ? colorScheme.primary : colorScheme.onSurface.withValues(alpha: 0.5),
-                    size: 26
+                  icon,
+                  color: isSelected
+                      ? colorScheme.primary
+                      : colorScheme.onSurface.withValues(alpha: 0.5),
+                  size: iconSize,
                 ),
                 const Gap(4),
                 AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
-                    height: 4,
-                    width: 4,
+                    height: indicatorSize,
+                    width: indicatorSize,
                     decoration: BoxDecoration(
                         color: isSelected ? colorScheme.primary : Colors.transparent,
                         shape: BoxShape.circle
@@ -225,69 +305,6 @@ class _DockItem extends StatelessWidget {
                 ),
               ]
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// The central "Add" button in the dock.
-///
-/// Supports a short tap to open the standard add entry screen, and a long press
-/// to quickly launch the camera.
-class _AddButton extends StatelessWidget {
-  const _AddButton();
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return GestureDetector(
-      onTap: () {
-        Logger.info('User tapped Add button (standard entry).');
-        HapticFeedback.heavyImpact();
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const AddEntryScreen()));
-      },
-      onLongPress: () async {
-        Logger.info('User long-pressed Add button (quick camera).');
-        HapticFeedback.heavyImpact();
-
-        final String? photoPath = await Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const CustomCameraScreen()),
-        );
-
-        if (photoPath != null && context.mounted) {
-          Logger.info('Photo captured via quick camera, navigating to AddEntryScreen.');
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => AddEntryScreen(initialImagePath: photoPath),
-            ),
-          );
-        }
-      },
-      child: Hero(
-        tag: 'add_button_main',
-        child: Container(
-          height: 56,
-          width: 56,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-                colors: [colorScheme.primary, colorScheme.primary.withValues(alpha: 0.8)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight
-            ),
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                  color: colorScheme.primary.withValues(alpha: 0.4),
-                  blurRadius: 15,
-                  offset: const Offset(0, 6)
-              )
-            ],
-          ),
-          child: const Icon(Icons.add_rounded, color: Colors.white, size: 32),
         ),
       ),
     );

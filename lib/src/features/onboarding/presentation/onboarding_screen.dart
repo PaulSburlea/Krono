@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,13 +20,34 @@ class OnboardingScreen extends ConsumerStatefulWidget {
   ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
+class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
+    with TickerProviderStateMixin {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+
+  // Animation controllers for background effects
+  late final AnimationController _bgAnimController;
+  late final AnimationController _pulseController;
+
+  @override
+  void initState() {
+    super.initState();
+    _bgAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 8),
+    )..repeat();
+
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
+  }
 
   @override
   void dispose() {
     _pageController.dispose();
+    _bgAnimController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
@@ -46,7 +68,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
         pageBuilder: (_, __, ___) => const AuthWrapper(child: MainWrapper()),
-        transitionsBuilder: (_, a, __, c) => FadeTransition(opacity: a, child: c),
+        transitionsBuilder: (_, a, __, c) =>
+            FadeTransition(opacity: a, child: c),
         transitionDuration: const Duration(milliseconds: 500),
       ),
     );
@@ -57,172 +80,330 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 
-    // Define slides dynamically to support localization context
+    // Define slides - colors are static, only text needs localization
     final List<_OnboardingSlideData> slides = [
       _OnboardingSlideData(
         icon: Icons.auto_stories_rounded,
         title: l10n.onboardingTitle1,
         description: l10n.onboardingDesc1,
         accentColor: const Color(0xFF6366F1),
+        secondaryColor: const Color(0xFF8B5CF6),
       ),
       _OnboardingSlideData(
         icon: Icons.lock_outline_rounded,
         title: l10n.onboardingTitle2,
         description: l10n.onboardingDesc2,
         accentColor: const Color(0xFF14B8A6),
+        secondaryColor: const Color(0xFF06B6D4),
       ),
     ];
 
     final isLastPage = _currentPage == slides.length - 1;
-    final currentAccent = slides[_currentPage].accentColor;
+    final currentSlide = slides[_currentPage];
+    final currentAccent = currentSlide.accentColor;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: Stack(
-        children: [
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 600),
-            curve: Curves.easeInOutCubic,
-            top: -100,
-            left: _currentPage % 2 == 0 ? -100 : null,
-            right: _currentPage % 2 != 0 ? -100 : null,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 600),
-              width: 400,
-              height: 400,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    currentAccent.withOpacityDouble(0.2),
-                    currentAccent.withOpacityDouble(0.05),
-                    Colors.transparent,
-                  ],
-                ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          // Calculate responsive values
+          final responsive = _ResponsiveOnboardingValues.from(
+            constraints: constraints,
+            context: context,
+          );
+
+          return Stack(
+            children: [
+              // Animated background gradients
+              _AnimatedBackground(
+                controller: _bgAnimController,
+                currentPage: _currentPage,
+                accentColor: currentAccent,
+                secondaryColor: currentSlide.secondaryColor,
+                responsive: responsive,
               ),
-            ),
-          ),
-          SafeArea(
-            child: Column(
-              children: [
-                Align(
-                  alignment: Alignment.topRight,
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    child: isLastPage
-                        ? const SizedBox(height: 48)
-                        : Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: TextButton(
-                        onPressed: _finishOnboarding,
-                        child: Text(
-                          l10n.onboardingSkip,
-                          style: TextStyle(
-                            color: theme.colorScheme.onSurface.withOpacityDouble(0.6),
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
+
+              SafeArea(
+                child: Column(
+                  children: [
+                    // Skip button
+                    Align(
+                      alignment: Alignment.topRight,
+                      child: Padding(
+                        padding: EdgeInsets.all(responsive.skipButtonPadding),
+                        child: !isLastPage
+                            ? TextButton(
+                          onPressed: _finishOnboarding,
+                          child: Text(
+                            l10n.onboardingSkip,
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurface
+                                  .withAlpha((0.6 * 255).round()),
+                              fontWeight: FontWeight.w600,
+                              fontSize: responsive.skipButtonFontSize,
+                            ),
                           ),
-                        ),
+                        )
+                            : SizedBox(height: responsive.skipButtonPadding),
                       ),
                     ),
-                  ),
-                ),
-                const Spacer(),
-                SizedBox(
-                  height: 450,
-                  child: PageView.builder(
-                    controller: _pageController,
-                    onPageChanged: _onPageChanged,
-                    itemCount: slides.length,
-                    itemBuilder: (context, index) {
-                      return AnimatedBuilder(
-                        animation: _pageController,
-                        builder: (context, child) {
-                          double value = 1.0;
-                          if (_pageController.hasClients && _pageController.position.haveDimensions) {
-                            final page = _pageController.page ?? _pageController.initialPage.toDouble();
-                            value = (page - index).abs();
-                            value = (1 - (value * 0.3)).clamp(0.7, 1.0);
-                          }
-                          return Opacity(
-                            opacity: value,
-                            child: Transform.scale(
-                              scale: Curves.easeOut.transform(value),
-                              child: child,
+
+                    // Page content - fully flexible
+                    Expanded(
+                      child: PageView.builder(
+                        controller: _pageController,
+                        onPageChanged: _onPageChanged,
+                        itemCount: slides.length,
+                        itemBuilder: (context, index) {
+                          return RepaintBoundary(
+                            child: _OnboardingSlide(
+                              key: ValueKey(index),
+                              data: slides[index],
+                              isActive: index == _currentPage,
+                              responsive: responsive,
                             ),
                           );
                         },
-                        child: _OnboardingSlide(key: ValueKey(index), data: slides[index]),
-                      );
-                    },
-                  ),
-                ),
-                const Spacer(),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 32.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: List.generate(slides.length, (index) {
-                            final isActive = index == _currentPage;
-                            return AnimatedContainer(
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeInOut,
-                              margin: const EdgeInsets.only(right: 8),
-                              height: 8,
-                              width: isActive ? 32 : 8,
-                              decoration: BoxDecoration(
-                                color: isActive
-                                    ? currentAccent
-                                    : theme.colorScheme.onSurface.withOpacityDouble(0.2),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            );
-                          }),
-                        ),
                       ),
-                      const Gap(16),
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(minWidth: 64, maxWidth: 200),
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 350),
-                          transitionBuilder: (child, animation) {
-                            return ScaleTransition(
-                              scale: animation,
-                              child: FadeTransition(opacity: animation, child: child),
-                            );
-                          },
-                          child: isLastPage
-                              ? _StartButton(
-                            key: const ValueKey('start'),
-                            color: currentAccent,
-                            label: l10n.onboardingStart,
-                            onPressed: _finishOnboarding,
-                          )
-                              : _NextButton(
-                            key: const ValueKey('next'),
-                            color: currentAccent,
-                            onPressed: () {
-                              HapticFeedback.lightImpact();
-                              _pageController.nextPage(
-                                duration: const Duration(milliseconds: 500),
-                                curve: Curves.easeOutCubic,
-                              );
-                            },
+                    ),
+
+                    // Bottom navigation
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: responsive.bottomPaddingHorizontal,
+                        vertical: responsive.bottomPaddingVertical,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Page indicators
+                          Expanded(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: List.generate(slides.length, (index) {
+                                final isActive = index == _currentPage;
+                                return AnimatedContainer(
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                  margin: EdgeInsets.only(
+                                      right: responsive.indicatorSpacing),
+                                  height: responsive.indicatorHeight,
+                                  width: isActive
+                                      ? responsive.indicatorActiveWidth
+                                      : responsive.indicatorHeight,
+                                  decoration: BoxDecoration(
+                                    color: isActive
+                                        ? currentAccent
+                                        : theme.colorScheme.onSurface
+                                        .withAlpha((0.2 * 255).round()),
+                                    borderRadius: BorderRadius.circular(
+                                        responsive.indicatorHeight / 2),
+                                  ),
+                                );
+                              }),
+                            ),
                           ),
-                        ),
+                          Gap(responsive.buttonGap),
+                          // Action button
+                          ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minWidth: responsive.buttonMinWidth,
+                              maxWidth: responsive.buttonMaxWidth,
+                            ),
+                            child: isLastPage
+                                ? _StartButton(
+                              color: currentAccent,
+                              label: l10n.onboardingStart,
+                              onPressed: _finishOnboarding,
+                              responsive: responsive,
+                            )
+                                : _PulsingNextButton(
+                              color: currentAccent,
+                              pulseController: _pulseController,
+                              onPressed: () {
+                                HapticFeedback.lightImpact();
+                                _pageController.nextPage(
+                                  duration:
+                                  const Duration(milliseconds: 500),
+                                  curve: Curves.easeOutCubic,
+                                );
+                              },
+                              responsive: responsive,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-        ],
+              ),
+            ],
+          );
+        },
       ),
+    );
+  }
+}
+
+/// Responsive values calculator
+class _ResponsiveOnboardingValues {
+  final double width;
+  final double height;
+  final double textScale;
+  final bool isTablet;
+  final bool isSmallScreen;
+  final bool isLandscape;
+
+  // Skip button
+  final double skipButtonPadding;
+  final double skipButtonFontSize;
+
+  // Bottom controls
+  final double bottomPaddingHorizontal;
+  final double bottomPaddingVertical;
+  final double indicatorSpacing;
+  final double indicatorHeight;
+  final double indicatorActiveWidth;
+  final double buttonGap;
+  final double buttonMinWidth;
+  final double buttonMaxWidth;
+  final double buttonHeight;
+
+  // Slide content
+  final double contentPaddingHorizontal;
+  final double contentPaddingVertical;
+  final double iconSize;
+  final double iconPadding;
+  final double iconBlurRadius;
+  final double gapAfterIcon;
+  final double gapAfterTitle;
+  final double titleFontSize;
+  final double descriptionFontSize;
+
+  // Background
+  final double primaryOrbSize;
+  final double secondaryOrbSize;
+
+  _ResponsiveOnboardingValues._({
+    required this.width,
+    required this.height,
+    required this.textScale,
+    required this.isTablet,
+    required this.isSmallScreen,
+    required this.isLandscape,
+    required this.skipButtonPadding,
+    required this.skipButtonFontSize,
+    required this.bottomPaddingHorizontal,
+    required this.bottomPaddingVertical,
+    required this.indicatorSpacing,
+    required this.indicatorHeight,
+    required this.indicatorActiveWidth,
+    required this.buttonGap,
+    required this.buttonMinWidth,
+    required this.buttonMaxWidth,
+    required this.buttonHeight,
+    required this.contentPaddingHorizontal,
+    required this.contentPaddingVertical,
+    required this.iconSize,
+    required this.iconPadding,
+    required this.iconBlurRadius,
+    required this.gapAfterIcon,
+    required this.gapAfterTitle,
+    required this.titleFontSize,
+    required this.descriptionFontSize,
+    required this.primaryOrbSize,
+    required this.secondaryOrbSize,
+  });
+
+  factory _ResponsiveOnboardingValues.from({
+    required BoxConstraints constraints,
+    required BuildContext context,
+  }) {
+    final width = constraints.maxWidth;
+    final height = constraints.maxHeight;
+    final shortestSide = math.min(width, height);
+    final textScale = MediaQuery.textScalerOf(context).scale(1.0);
+
+    final isTablet = shortestSide >= 600;
+    final isSmallScreen = shortestSide < 360;
+    final isLandscape = width > height;
+
+    // Base scale factor (0.8 - 1.3)
+    final scaleFactor = (shortestSide / 375).clamp(0.8, 1.3);
+
+    return _ResponsiveOnboardingValues._(
+      width: width,
+      height: height,
+      textScale: textScale,
+      isTablet: isTablet,
+      isSmallScreen: isSmallScreen,
+      isLandscape: isLandscape,
+
+      // Skip button
+      skipButtonPadding: isTablet ? 20.0 : 16.0,
+      skipButtonFontSize: (16.0 * textScale).clamp(14.0, 18.0),
+
+      // Bottom controls
+      bottomPaddingHorizontal: isTablet
+          ? 48.0
+          : isSmallScreen
+          ? 20.0
+          : 32.0,
+      bottomPaddingVertical: isTablet
+          ? 32.0
+          : isLandscape
+          ? 16.0
+          : 24.0,
+      indicatorSpacing: isTablet ? 10.0 : 8.0,
+      indicatorHeight: isTablet ? 9.0 : 8.0,
+      indicatorActiveWidth: isTablet ? 36.0 : 32.0,
+      buttonGap: 16.0,
+      buttonMinWidth: isTablet ? 72.0 : 64.0,
+      buttonMaxWidth: isTablet ? 220.0 : 200.0,
+      buttonHeight: isTablet ? 68.0 : 64.0,
+
+      // Slide content - critical for text visibility
+      contentPaddingHorizontal: isTablet
+          ? 64.0
+          : isSmallScreen
+          ? 24.0
+          : 32.0,
+      contentPaddingVertical: isLandscape ? 8.0 : 20.0,
+      iconSize: isTablet
+          ? 72.0
+          : isLandscape
+          ? 48.0
+          : (56.0 * scaleFactor).clamp(48.0, 64.0),
+      iconPadding: isTablet
+          ? 28.0
+          : isLandscape
+          ? 20.0
+          : (24.0 * scaleFactor).clamp(20.0, 28.0),
+      iconBlurRadius: isTablet ? 35.0 : 28.0,
+      gapAfterIcon: isTablet
+          ? 32.0
+          : isLandscape
+          ? 12.0
+          : (20.0 * scaleFactor).clamp(16.0, 28.0),
+      gapAfterTitle: isTablet
+          ? 14.0
+          : isLandscape
+          ? 8.0
+          : (12.0 * scaleFactor).clamp(10.0, 14.0),
+      titleFontSize: isTablet
+          ? 28.0
+          : isLandscape
+          ? 20.0
+          : (24.0 * scaleFactor).clamp(20.0, 28.0),
+      descriptionFontSize: isTablet
+          ? 16.0
+          : isLandscape
+          ? 13.0
+          : (14.0 * scaleFactor).clamp(13.0, 16.0),
+
+      // Background
+      primaryOrbSize: isTablet ? 450.0 : 350.0,
+      secondaryOrbSize: isTablet ? 350.0 : 280.0,
     );
   }
 }
@@ -233,92 +414,355 @@ class _OnboardingSlideData {
   final String title;
   final String description;
   final Color accentColor;
+  final Color secondaryColor;
 
   const _OnboardingSlideData({
     required this.icon,
     required this.title,
     required this.description,
     required this.accentColor,
+    required this.secondaryColor,
   });
 }
 
-/// Visual representation of a single onboarding slide.
-class _OnboardingSlide extends StatelessWidget {
-  final _OnboardingSlideData data;
-  const _OnboardingSlide({super.key, required this.data});
+/// Animated background component
+class _AnimatedBackground extends StatelessWidget {
+  final AnimationController controller;
+  final int currentPage;
+  final Color accentColor;
+  final Color secondaryColor;
+  final _ResponsiveOnboardingValues responsive;
+
+  const _AnimatedBackground({
+    required this.controller,
+    required this.currentPage,
+    required this.accentColor,
+    required this.secondaryColor,
+    required this.responsive,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(40),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  data.accentColor.withOpacityDouble(0.15),
-                  data.accentColor.withOpacityDouble(0.05),
-                ],
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: controller,
+        builder: (context, child) {
+          final value = controller.value;
+          final sinValue = math.sin(value * math.pi * 2);
+          final cosValue = math.cos(value * math.pi * 2);
+
+          return Stack(
+            children: [
+              Positioned(
+                top: -80 + sinValue * 20,
+                left: currentPage % 2 == 0 ? -80 + cosValue * 30 : null,
+                right: currentPage % 2 != 0 ? -80 + cosValue * 30 : null,
+                child: _GradientOrb(
+                  size: responsive.primaryOrbSize,
+                  color: accentColor,
+                  opacity: 0.25,
+                ),
               ),
-              border: Border.all(color: data.accentColor.withOpacityDouble(0.3), width: 2),
-            ),
-            child: Icon(data.icon, size: 80, color: data.accentColor),
-          ),
-          const Gap(48),
-          Text(
-            data.title,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.w900,
-              letterSpacing: -0.5,
-              height: 1.2,
-              color: theme.colorScheme.onSurface,
-            ),
-          ),
-          const Gap(16),
-          Text(
-            data.description,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-              height: 1.6,
-              fontSize: 16,
-            ),
-          ),
-        ],
+              Positioned(
+                bottom: -120 + cosValue * 25,
+                right: currentPage % 2 == 0 ? -100 + sinValue * 20 : null,
+                left: currentPage % 2 != 0 ? -100 + sinValue * 20 : null,
+                child: _GradientOrb(
+                  size: responsive.secondaryOrbSize,
+                  color: secondaryColor,
+                  opacity: 0.15,
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 }
 
-/// Standard navigation button for onboarding.
-class _NextButton extends StatelessWidget {
+/// Gradient orb for background decoration.
+class _GradientOrb extends StatelessWidget {
+  final double size;
   final Color color;
-  final VoidCallback onPressed;
+  final double opacity;
 
-  const _NextButton({super.key, required this.color, required this.onPressed});
+  const _GradientOrb({
+    required this.size,
+    required this.color,
+    required this.opacity,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 64,
-      height: 64,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: Colors.white,
-          padding: EdgeInsets.zero,
-          shape: const CircleBorder(),
-          elevation: 8,
-          shadowColor: color.withOpacityDouble(0.4),
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [
+            color.withAlpha((opacity * 255).round()),
+            color.withAlpha((opacity * 0.3 * 255).round()),
+            Colors.transparent,
+          ],
+          stops: const [0.0, 0.5, 1.0],
         ),
-        child: const Icon(Icons.arrow_forward_rounded, size: 28),
+      ),
+    );
+  }
+}
+
+/// Visual representation of a single onboarding slide.
+class _OnboardingSlide extends StatefulWidget {
+  final _OnboardingSlideData data;
+  final bool isActive;
+  final _ResponsiveOnboardingValues responsive;
+
+  const _OnboardingSlide({
+    super.key,
+    required this.data,
+    required this.isActive,
+    required this.responsive,
+  });
+
+  @override
+  State<_OnboardingSlide> createState() => _OnboardingSlideState();
+}
+
+class _OnboardingSlideState extends State<_OnboardingSlide>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _staggerController;
+  late final Animation<double> _iconAnimation;
+  late final Animation<double> _titleAnimation;
+  late final Animation<double> _descAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _staggerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+
+    _iconAnimation = CurvedAnimation(
+      parent: _staggerController,
+      curve: const Interval(0.0, 0.5, curve: Curves.easeOutCubic),
+    );
+
+    _titleAnimation = CurvedAnimation(
+      parent: _staggerController,
+      curve: const Interval(0.2, 0.7, curve: Curves.easeOutCubic),
+    );
+
+    _descAnimation = CurvedAnimation(
+      parent: _staggerController,
+      curve: const Interval(0.4, 1.0, curve: Curves.easeOutCubic),
+    );
+
+    if (widget.isActive) {
+      _staggerController.forward();
+    }
+  }
+
+  @override
+  void didUpdateWidget(_OnboardingSlide oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive && !oldWidget.isActive) {
+      _staggerController.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _staggerController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final responsive = widget.responsive;
+
+    return Center(
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: EdgeInsets.symmetric(
+          horizontal: responsive.contentPaddingHorizontal,
+          vertical: responsive.contentPaddingVertical,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Animated icon
+            RepaintBoundary(
+              child: AnimatedBuilder(
+                animation: _iconAnimation,
+                builder: (context, child) {
+                  final opacity = _iconAnimation.value.clamp(0.0, 1.0);
+                  final scale = 0.5 + (opacity * 0.5);
+
+                  return Transform.scale(
+                    scale: scale,
+                    child: Opacity(
+                      opacity: opacity,
+                      child: Container(
+                        padding: EdgeInsets.all(responsive.iconPadding),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [
+                              widget.data.accentColor
+                                  .withAlpha((0.18 * 255).round()),
+                              widget.data.accentColor
+                                  .withAlpha((0.06 * 255).round()),
+                            ],
+                          ),
+                          border: Border.all(
+                            color: widget.data.accentColor
+                                .withAlpha((0.4 * 255).round()),
+                            width: 2.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: widget.data.accentColor
+                                  .withAlpha((0.25 * 255).round()),
+                              blurRadius: responsive.iconBlurRadius,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          widget.data.icon,
+                          size: responsive.iconSize,
+                          color: widget.data.accentColor,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            Gap(responsive.gapAfterIcon),
+
+            // Animated title
+            AnimatedBuilder(
+              animation: _titleAnimation,
+              builder: (context, child) {
+                final opacity = _titleAnimation.value.clamp(0.0, 1.0);
+                return Transform.translate(
+                  offset: Offset(0, 20 * (1 - opacity)),
+                  child: Opacity(opacity: opacity, child: child),
+                );
+              },
+              child: Text(
+                widget.data.title,
+                textAlign: TextAlign.center,
+                maxLines: responsive.isLandscape ? 2 : 3,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.5,
+                  height: 1.2,
+                  fontSize: responsive.titleFontSize,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+            ),
+
+            Gap(responsive.gapAfterTitle),
+
+            // Animated description
+            AnimatedBuilder(
+              animation: _descAnimation,
+              builder: (context, child) {
+                final opacity = _descAnimation.value.clamp(0.0, 1.0);
+                return Transform.translate(
+                  offset: Offset(0, 20 * (1 - opacity)),
+                  child: Opacity(opacity: opacity, child: child),
+                );
+              },
+              child: Text(
+                widget.data.description,
+                textAlign: TextAlign.center,
+                maxLines: responsive.isLandscape ? 2 : 4,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  height: 1.5,
+                  fontSize: responsive.descriptionFontSize,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Pulsing next button with glow effect.
+class _PulsingNextButton extends StatelessWidget {
+  final Color color;
+  final VoidCallback onPressed;
+  final AnimationController pulseController;
+  final _ResponsiveOnboardingValues responsive;
+
+  const _PulsingNextButton({
+    required this.color,
+    required this.onPressed,
+    required this.pulseController,
+    required this.responsive,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: pulseController,
+        builder: (context, child) {
+          final pulseValue = Curves.easeInOut.transform(pulseController.value);
+          final scale = 1.0 + (pulseValue * 0.06);
+          final glowOpacity = 0.3 + (pulseValue * 0.2);
+
+          return Transform.scale(
+            scale: scale,
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withAlpha((glowOpacity * 255).round()),
+                    blurRadius: 20 + pulseValue * 10,
+                    spreadRadius: pulseValue * 4,
+                  ),
+                ],
+              ),
+              child: child,
+            ),
+          );
+        },
+        child: SizedBox(
+          width: responsive.buttonHeight,
+          height: responsive.buttonHeight,
+          child: ElevatedButton(
+            onPressed: onPressed,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: color,
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.zero,
+              shape: const CircleBorder(),
+              elevation: 0,
+            ),
+            child: Icon(
+              Icons.arrow_forward_rounded,
+              size: responsive.isTablet ? 30.0 : 28.0,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -329,23 +773,22 @@ class _StartButton extends StatelessWidget {
   final Color color;
   final String label;
   final VoidCallback onPressed;
+  final _ResponsiveOnboardingValues responsive;
 
   const _StartButton({
-    super.key,
     required this.color,
     required this.label,
     required this.onPressed,
+    required this.responsive,
   });
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isSmallScreen = screenWidth < 360;
-
-    if (isSmallScreen) {
+    // Small screens get circular button
+    if (responsive.isSmallScreen) {
       return SizedBox(
-        width: 64,
-        height: 64,
+        width: responsive.buttonHeight,
+        height: responsive.buttonHeight,
         child: ElevatedButton(
           onPressed: onPressed,
           style: ElevatedButton.styleFrom(
@@ -354,25 +797,47 @@ class _StartButton extends StatelessWidget {
             padding: EdgeInsets.zero,
             shape: const CircleBorder(),
             elevation: 8,
-            shadowColor: color.withOpacityDouble(0.4),
+            shadowColor: color.withAlpha((0.4 * 255).round()),
           ),
-          child: const Icon(Icons.check_rounded, size: 32),
+          child: Icon(
+            Icons.check_rounded,
+            size: responsive.isTablet ? 34.0 : 32.0,
+          ),
         ),
       );
     }
 
+    // Standard rounded button
+    final buttonRadius = responsive.buttonHeight / 3;
+
     return Container(
-      height: 64,
-      constraints: const BoxConstraints(minWidth: 140, maxWidth: 200),
+      height: responsive.buttonHeight,
+      constraints: BoxConstraints(
+        minWidth: responsive.buttonMinWidth + 60,
+        maxWidth: responsive.buttonMaxWidth,
+      ),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(buttonRadius),
+        boxShadow: [
+          BoxShadow(
+            color: color.withAlpha((0.4 * 255).round()),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          elevation: 8,
-          shadowColor: color.withOpacityDouble(0.4),
+          padding: EdgeInsets.symmetric(
+            horizontal: responsive.isTablet ? 28.0 : 24.0,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(buttonRadius),
+          ),
+          elevation: 0,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -382,26 +847,22 @@ class _StartButton extends StatelessWidget {
               child: Text(
                 label,
                 maxLines: 1,
-                overflow: TextOverflow.fade,
-                softWrap: false,
-                style: const TextStyle(
-                  fontSize: 18,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: responsive.isTablet ? 19.0 : 18.0,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
                 ),
               ),
             ),
             const Gap(8),
-            const Icon(Icons.arrow_forward_rounded, size: 24),
+            Icon(
+              Icons.arrow_forward_rounded,
+              size: responsive.isTablet ? 26.0 : 24.0,
+            ),
           ],
         ),
       ),
     );
   }
-}
-
-/// Extension to handle color opacity with modern alpha values.
-extension ColorExt on Color {
-  /// Returns a copy of this color with the given [opacity].
-  Color withOpacityDouble(double opacity) => withAlpha((opacity * 255).round());
 }

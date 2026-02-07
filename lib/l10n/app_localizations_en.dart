@@ -57,6 +57,53 @@ class AppLocalizationsEn extends AppLocalizations {
   String get days => 'days';
 
   @override
+  String get streakDaySingular => 'Day Streak';
+
+  @override
+  String get streakDaysPlural => 'Days Streak';
+
+  @override
+  String get thisWeek => 'This Week';
+
+  @override
+  String get nextMilestone => 'Next milestone';
+
+  @override
+  String daysRemaining(Object count) {
+    return '$count days to go';
+  }
+
+  @override
+  String get streakFirstDay => 'Great start! Come back tomorrow! 🌟';
+
+  @override
+  String get streakWeekProgress => 'You\'re building a habit! Keep it up! 💪';
+
+  @override
+  String get streakFirstWeek => 'One week! You\'re on fire! 🔥';
+
+  @override
+  String get streakMonthProgress => 'Incredible consistency! Don\'t break the chain! ⛓️';
+
+  @override
+  String get streakFirstMonth => '30 days! You\'re a memory-keeping champion! 🏆';
+
+  @override
+  String get streakHundredProgress => 'You\'re unstoppable! Keep going! 🚀';
+
+  @override
+  String get streakHundred => '100 days! Legendary status achieved! ⭐';
+
+  @override
+  String get streakYearProgress => 'You\'re a journaling master! Almost there! 👑';
+
+  @override
+  String get streakFirstYear => '365 days! A full year of memories! 🎉';
+
+  @override
+  String get streakLegendary => 'You\'re a legend! Your dedication is inspiring! 💎';
+
+  @override
   String get yourMemories => 'Your Memories';
 
   @override
@@ -460,4 +507,49 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingDesc2 => 'Your memories stay on your device. No tracking, no cloud uploads, no data collection.';
+
+  @override
+  String get themeCrimson => 'Crimson';
+
+  @override
+  String get themeAmethyst => 'Amethyst';
+
+  @override
+  String get themeGold => 'Gold';
+
+  @override
+  String get themeTurquoise => 'Turquoise';
+
+  @override
+  String get themeRose => 'Rose';
+
+  @override
+  String get themeSapphire => 'Sapphire';
+
+  @override
+  String get update => 'Update';
+
+  @override
+  String get remove => 'Remove';
+
+  @override
+  String get discardChangesTitle => 'Discard this memory?';
+
+  @override
+  String get discardChangesMessage => 'You haven\'t saved yet. Leaving now will delete this entry permanently. Are you sure?';
+
+  @override
+  String get discard => 'Discard';
+
+  @override
+  String get notificationPromptTitle => 'Keep the streak alive!';
+
+  @override
+  String get notificationPromptBody => 'Great job on your first memory! Set a daily reminder so you never forget to capture the moment.';
+
+  @override
+  String get maybeLater => 'Maybe Later';
+
+  @override
+  String get setReminder => 'Set Reminder';
 }

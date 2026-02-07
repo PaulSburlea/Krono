@@ -175,4 +175,15 @@ class JournalRepository {
     await _db.delete(_db.dayEntries).go();
     Logger.info('All journal data and files have been deleted.');
   }
+
+  /// Fetches the date of the earliest journal entry.
+  /// Returns null if no entries exist.
+  Future<DateTime?> getFirstEntryDate() async {
+    final query = _db.select(_db.dayEntries)
+      ..orderBy([(t) => OrderingTerm(expression: t.date, mode: OrderingMode.asc)])
+      ..limit(1);
+
+    final result = await query.getSingleOrNull();
+    return result?.date;
+  }
 }

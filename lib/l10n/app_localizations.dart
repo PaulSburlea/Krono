@@ -193,6 +193,96 @@ abstract class AppLocalizations {
   /// **'days'**
   String get days;
 
+  /// No description provided for @streakDaySingular.
+  ///
+  /// In en, this message translates to:
+  /// **'Day Streak'**
+  String get streakDaySingular;
+
+  /// No description provided for @streakDaysPlural.
+  ///
+  /// In en, this message translates to:
+  /// **'Days Streak'**
+  String get streakDaysPlural;
+
+  /// No description provided for @thisWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'This Week'**
+  String get thisWeek;
+
+  /// No description provided for @nextMilestone.
+  ///
+  /// In en, this message translates to:
+  /// **'Next milestone'**
+  String get nextMilestone;
+
+  /// No description provided for @daysRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} days to go'**
+  String daysRemaining(Object count);
+
+  /// No description provided for @streakFirstDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Great start! Come back tomorrow! 🌟'**
+  String get streakFirstDay;
+
+  /// No description provided for @streakWeekProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re building a habit! Keep it up! 💪'**
+  String get streakWeekProgress;
+
+  /// No description provided for @streakFirstWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'One week! You\'re on fire! 🔥'**
+  String get streakFirstWeek;
+
+  /// No description provided for @streakMonthProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Incredible consistency! Don\'t break the chain! ⛓️'**
+  String get streakMonthProgress;
+
+  /// No description provided for @streakFirstMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'30 days! You\'re a memory-keeping champion! 🏆'**
+  String get streakFirstMonth;
+
+  /// No description provided for @streakHundredProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re unstoppable! Keep going! 🚀'**
+  String get streakHundredProgress;
+
+  /// No description provided for @streakHundred.
+  ///
+  /// In en, this message translates to:
+  /// **'100 days! Legendary status achieved! ⭐'**
+  String get streakHundred;
+
+  /// No description provided for @streakYearProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re a journaling master! Almost there! 👑'**
+  String get streakYearProgress;
+
+  /// No description provided for @streakFirstYear.
+  ///
+  /// In en, this message translates to:
+  /// **'365 days! A full year of memories! 🎉'**
+  String get streakFirstYear;
+
+  /// No description provided for @streakLegendary.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re a legend! Your dedication is inspiring! 💎'**
+  String get streakLegendary;
+
   /// No description provided for @yourMemories.
   ///
   /// In en, this message translates to:
@@ -966,6 +1056,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your memories stay on your device. No tracking, no cloud uploads, no data collection.'**
   String get onboardingDesc2;
+
+  /// No description provided for @themeCrimson.
+  ///
+  /// In en, this message translates to:
+  /// **'Crimson'**
+  String get themeCrimson;
+
+  /// No description provided for @themeAmethyst.
+  ///
+  /// In en, this message translates to:
+  /// **'Amethyst'**
+  String get themeAmethyst;
+
+  /// No description provided for @themeGold.
+  ///
+  /// In en, this message translates to:
+  /// **'Gold'**
+  String get themeGold;
+
+  /// No description provided for @themeTurquoise.
+  ///
+  /// In en, this message translates to:
+  /// **'Turquoise'**
+  String get themeTurquoise;
+
+  /// No description provided for @themeRose.
+  ///
+  /// In en, this message translates to:
+  /// **'Rose'**
+  String get themeRose;
+
+  /// No description provided for @themeSapphire.
+  ///
+  /// In en, this message translates to:
+  /// **'Sapphire'**
+  String get themeSapphire;
+
+  /// No description provided for @update.
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get update;
+
+  /// No description provided for @remove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get remove;
+
+  /// No description provided for @discardChangesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard this memory?'**
+  String get discardChangesTitle;
+
+  /// No description provided for @discardChangesMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You haven\'t saved yet. Leaving now will delete this entry permanently. Are you sure?'**
+  String get discardChangesMessage;
+
+  /// No description provided for @discard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get discard;
+
+  /// No description provided for @notificationPromptTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the streak alive!'**
+  String get notificationPromptTitle;
+
+  /// No description provided for @notificationPromptBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Great job on your first memory! Set a daily reminder so you never forget to capture the moment.'**
+  String get notificationPromptBody;
+
+  /// No description provided for @maybeLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Maybe Later'**
+  String get maybeLater;
+
+  /// No description provided for @setReminder.
+  ///
+  /// In en, this message translates to:
+  /// **'Set Reminder'**
+  String get setReminder;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

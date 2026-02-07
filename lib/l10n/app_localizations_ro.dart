@@ -57,6 +57,53 @@ class AppLocalizationsRo extends AppLocalizations {
   String get days => 'zile';
 
   @override
+  String get streakDaySingular => 'Zi de Amintiri';
+
+  @override
+  String get streakDaysPlural => 'Zile de Amintiri';
+
+  @override
+  String get thisWeek => 'Această Săptămână';
+
+  @override
+  String get nextMilestone => 'Următorul obiectiv';
+
+  @override
+  String daysRemaining(Object count) {
+    return '$count zile rămase';
+  }
+
+  @override
+  String get streakFirstDay => 'Super început! Revino mâine! 🌟';
+
+  @override
+  String get streakWeekProgress => 'Construiești un obicei! Continuă! 💪';
+
+  @override
+  String get streakFirstWeek => 'O săptămână! Ești în flăcări! 🔥';
+
+  @override
+  String get streakMonthProgress => 'Consistență incredibilă! Nu rupe lanțul! ⛓️';
+
+  @override
+  String get streakFirstMonth => '30 de zile! Ești campion la păstrarea amintirilor! 🏆';
+
+  @override
+  String get streakHundredProgress => 'Ești de neoprit! Continuă! 🚀';
+
+  @override
+  String get streakHundred => '100 de zile! Status legendar atins! ⭐';
+
+  @override
+  String get streakYearProgress => 'Ești maestru la jurnalism! Aproape acolo! 👑';
+
+  @override
+  String get streakFirstYear => '365 de zile! Un an întreg de amintiri! 🎉';
+
+  @override
+  String get streakLegendary => 'Ești o legendă! Dedicarea ta inspiră! 💎';
+
+  @override
   String get yourMemories => 'Amintirile tale';
 
   @override
@@ -460,4 +507,49 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get onboardingDesc2 => 'Amintirile tale rămân pe dispozitivul tău. Fără urmărire, fără încărcări în cloud, fără colectare de date';
+
+  @override
+  String get themeCrimson => 'Stacojiu';
+
+  @override
+  String get themeAmethyst => 'Ametist';
+
+  @override
+  String get themeGold => 'Auriu';
+
+  @override
+  String get themeTurquoise => 'Turcoaz';
+
+  @override
+  String get themeRose => 'Trandafir';
+
+  @override
+  String get themeSapphire => 'Safir';
+
+  @override
+  String get update => 'Actualizează';
+
+  @override
+  String get remove => 'Șterge';
+
+  @override
+  String get discardChangesTitle => 'Ieși fără să salvezi?';
+
+  @override
+  String get discardChangesMessage => 'Dacă pleci acum, această amintire va fi ștearsă definitiv. Ești sigur?';
+
+  @override
+  String get discard => 'Renunță';
+
+  @override
+  String get notificationPromptTitle => 'Menține seria activă!';
+
+  @override
+  String get notificationPromptBody => 'Felicitări pentru prima amintire! Setează un memento zilnic ca să nu uiți să surprinzi momentul.';
+
+  @override
+  String get maybeLater => 'Mai târziu';
+
+  @override
+  String get setReminder => 'Setează Memento';
 }

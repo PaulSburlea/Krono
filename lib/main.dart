@@ -1,10 +1,8 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:krono/src/core/utils/thumbnail/thumbnail_migration.dart';
-import 'package:krono/src/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -29,63 +27,53 @@ import 'src/core/utils/logger_service.dart';
 import 'src/core/utils/notification_service.dart';
 import 'src/core/utils/theme.dart';
 import 'src/features/journal/presentation/main_wrapper.dart';
+import 'src/features/onboarding/presentation/onboarding_screen.dart';
+import 'src/core/utils/thumbnail/thumbnail_migration.dart';
 
 /// Initializes locale date formatting data for supported languages.
-///
-/// This ensures that date formatting functions (e.g., from the `intl` package)
-/// work correctly for Romanian, English, and French before the UI renders.
 Future<void> _initializeDateFormatting() async {
   final locales = ['ro', 'en', 'fr'];
   await Future.wait(locales.map((locale) => initializeDateFormatting(locale, null)));
 }
 
 /// The application entry point.
-///
-/// Sets up the execution zone to catch global errors, initializes critical
-/// services (Firebase, Database, Preferences) in parallel for performance,
-/// and schedules non-critical background tasks to run after the UI is visible.
 void main() async {
   runZonedGuarded<Future<void>>(() async {
-    // 1. Mandatory minimal initialization
+    // 1. Minimal initialization
     final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
     FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
-    // 2. Load critical resources in parallel to minimize startup time
+    // Note: Orientation lock should be handled natively in AndroidManifest.xml
+    // and Info.plist to avoid the async delay here.
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+
+    // 2. Load only critical resources required for the first frame
     Logger.info('Bootstrap: Initializing critical resources...');
     final initResults = await Future.wait([
-      SharedPreferences.getInstance(), // Index 0
-      Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform), // Index 1
-      _initializeDateFormatting(), // Index 2
+      SharedPreferences.getInstance(),
+      Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform),
+      _initializeDateFormatting(),
     ]);
 
     final prefs = initResults[0] as SharedPreferences;
 
-    // 👇 ADAUGĂ ACEST BLOC AICI 👇
-    if (kDebugMode) {
-      // Această linie va reseta onboarding-ul la fiecare restart în Debug
-      // Comenteaz-o după ce ai terminat de testat ecranul!
-      await prefs.setBool('onboarding_completed', false);
-
-    }
-
-    // 3. Configure core services
-    // Pass all uncaught Flutter errors to Crashlytics
+    // 3. Configure global error tracking
     FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
 
+    // 4. Instantiate core services (Synchronous or non-blocking)
     final database = AppDatabase();
     final notificationService = NotificationService(FlutterLocalNotificationsPlugin());
-    await notificationService.init();
 
-    // Optimize Image Cache for list performance
+    // Optimize Image Cache
     PaintingBinding.instance.imageCache.maximumSize = 50;
     PaintingBinding.instance.imageCache.maximumSizeBytes = 100 << 20; // 100 MB
 
-    Logger.info('Bootstrap: Services initialized. Launching UI.');
-
-    // Check if the user has completed the onboarding flow
     final bool onboardingCompleted = prefs.getBool('onboarding_completed') ?? false;
 
-    // 4. Launch the application
+    // 5. Launch the application immediately
     runApp(
       ProviderScope(
         overrides: [
@@ -97,52 +85,40 @@ void main() async {
       ),
     );
 
-    // 5. Deferred Tasks
-    // These operations run in the background after the first frame is rendered
-    // to prevent blocking the main thread during startup.
+    // 6. Remove Splash Screen as soon as the app is attached
+    FlutterNativeSplash.remove();
+
+    // 7. Deferred Tasks (Non-critical for first frame)
     Future.microtask(() async {
       Logger.info('Bootstrap: Starting deferred background tasks.');
       try {
+        // Initialize notifications in the background
+        await notificationService.init();
+
         if (FirebaseAuth.instance.currentUser == null) {
-          Logger.info('Auth: Signing in anonymously.');
           await FirebaseAuth.instance.signInAnonymously();
         }
 
-        // Temporary sync logic for legacy data migration
         await syncActivityLogFromEntries(database);
-
         await runBackgroundThumbnailMigration(database, concurrency: 3);
         await runCleanupIfNeeded(db: database, prefs: prefs);
         await BackupService.cleanupCache();
-        Logger.info('Bootstrap: Deferred tasks completed successfully.');
+
+        Logger.info('Bootstrap: Deferred tasks completed.');
       } catch (e, stack) {
         Logger.error('Bootstrap: Error during deferred tasks.', e, stack);
       }
     });
 
-    // 6. Remove Splash Screen once the UI is stable
-    Future.delayed(const Duration(milliseconds: 200), () {
-      FlutterNativeSplash.remove();
-    });
-
   }, (error, stack) {
-    // Catch any errors that occur outside the Flutter context (Zone errors)
     Logger.error('Global: Uncaught error in runZonedGuarded.', error, stack);
   });
 }
 
 /// The root widget of the application.
-///
-/// Configures global application settings including:
-/// - Routing (via [MainWrapper] or [OnboardingScreen])
-/// - Theming (Light/Dark mode)
-/// - Localization
-/// - Authentication state wrapping
 class KronoApp extends ConsumerWidget {
-  /// Indicates whether the user has previously completed the onboarding flow.
   final bool onboardingCompleted;
 
-  /// Creates the root application widget.
   const KronoApp({
     super.key,
     required this.onboardingCompleted,
@@ -164,7 +140,6 @@ class KronoApp extends ConsumerWidget {
       theme: AppTheme.createLightTheme(accentColor),
       darkTheme: AppTheme.createDarkTheme(accentColor),
       themeMode: themeMode,
-      // Determine the initial screen based on onboarding status
       home: onboardingCompleted
           ? const AuthWrapper(child: MainWrapper())
           : const OnboardingScreen(),

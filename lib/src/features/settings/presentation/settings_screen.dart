@@ -23,18 +23,12 @@ import 'widgets/language_selector_sheet.dart';
 import 'widgets/time_picker_sheet.dart';
 
 /// The main settings screen of the application.
-///
-/// Allows users to configure notifications, theme, language, security, data management,
-/// and access legal/feedback information.
 class SettingsScreen extends ConsumerWidget {
-  /// Creates the settings screen.
   const SettingsScreen({super.key});
 
   static const String _feedbackFormUrl = 'https://forms.gle/8ppmLJi6itKeCZig7';
-
   static const String _privacyPolicyUrl = 'https://sites.google.com/view/krono-privacy';
 
-  /// Returns the localized display name for a given language code.
   String _getLanguageName(String code) {
     return switch (code) {
       'ro' => 'Română',
@@ -51,6 +45,7 @@ class SettingsScreen extends ConsumerWidget {
     final currentLocale = ref.watch(localeProvider);
     final isAuthEnabled = ref.watch(authSettingsProvider);
     final notifState = ref.watch(notificationProvider);
+    final isExportingPdf = ref.watch(pdfExportLoadingProvider);
     final exportPdf = ref.read(exportPdfProvider);
 
     final String formattedTime =
@@ -64,10 +59,7 @@ class SettingsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-            l10n.settings,
-            style: const TextStyle(fontWeight: FontWeight.bold)
-        ),
+        title: Text(l10n.settings, style: const TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
       ),
       body: ListView(
@@ -152,11 +144,9 @@ class SettingsScreen extends ConsumerWidget {
               SettingsTile(
                 icon: Icons.picture_as_pdf_outlined,
                 title: l10n.exportPdf,
-                onTap: () async {
-                  Logger.info('User initiated PDF export.');
-                  HapticFeedback.mediumImpact();
-                  await exportPdf();
-                },
+                trailing: isExportingPdf ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : null,
+                // Fixed: Pass 'ref' to the handler function
+                onTap: isExportingPdf ? null : () => _handlePdfExportFlow(context, ref, exportPdf, l10n),
               ),
             ],
           ),
@@ -213,6 +203,100 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
+  /// Orchestrates the PDF export flow, starting with a date range picker.
+  Future<void> _handlePdfExportFlow(
+      BuildContext context,
+      WidgetRef ref,
+      Future<void> Function(DateTimeRange?) exportPdf,
+      AppLocalizations l10n
+      ) async {
+    HapticFeedback.mediumImpact();
+
+    final firstEntryDate = await ref.read(journalRepositoryProvider).getFirstEntryDate();
+
+    if (!context.mounted) return;
+
+    final DateTimeRange? pickedRange = await showDateRangePicker(
+      context: context,
+      firstDate: firstEntryDate ?? DateTime(2020),
+      lastDate: DateTime.now(),
+      helpText: "Select Period for PDF Export",
+      confirmText: "Export",
+      saveText: "Export",
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+              primary: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (pickedRange == null) return;
+
+    if (context.mounted) {
+      await _handlePdfExportWithLoading(context, () => exportPdf(pickedRange), l10n);
+    }
+  }
+
+  /// Handles the PDF export process with a loading dialog.
+  Future<void> _handlePdfExportWithLoading(
+      BuildContext context,
+      Future<void> Function() exportPdf,
+      AppLocalizations l10n,
+      ) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => _LoadingDialog(
+        title: l10n.exportPdf,
+        message: l10n.processing,
+      ),
+    );
+
+    try {
+      await exportPdf();
+
+      if (context.mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        HapticFeedback.heavyImpact();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_outline_rounded, color: Colors.white),
+                const Gap(12),
+                const Expanded(child: Text('PDF exported successfully!')),
+              ],
+            ),
+            backgroundColor: Colors.green.shade800,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 3),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        final message = e.toString().contains('No entries')
+            ? 'No entries found for the selected period'
+            : 'Error during PDF export';
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
   /// Launches a URL in the external browser.
   Future<void> _launchUrl(BuildContext context, String urlString) async {
     try {
@@ -220,16 +304,7 @@ class SettingsScreen extends ConsumerWidget {
       if (await canLaunchUrl(url)) {
         await launchUrl(url, mode: LaunchMode.externalApplication);
       } else {
-        Logger.error(
-            'Could not launch URL: $urlString',
-            Exception('Launch failed'),
-            StackTrace.current
-        );
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Could not open link.')),
-          );
-        }
+        Logger.error('Could not launch URL: $urlString', Exception('Launch failed'), StackTrace.current);
       }
     } catch (e, stack) {
       Logger.error('Error launching URL', e, stack);
@@ -287,8 +362,6 @@ class SettingsScreen extends ConsumerWidget {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
-      } else if (!success && context.mounted) {
-        HapticFeedback.lightImpact();
       }
     }
   }
@@ -402,7 +475,6 @@ class SettingsScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final authService = ref.read(authServiceProvider);
 
-    // Verify hardware and enrollment before attempting authentication
     final bool canAuth = await authService.canAuthenticate();
 
     if (!canAuth) {

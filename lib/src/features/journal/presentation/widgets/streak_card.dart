@@ -24,28 +24,19 @@ class StreakCard extends StatelessWidget {
     required this.activeDates,
   });
 
-  /// Formats the total days into a human-readable duration (Years, Weeks, Days).
-  ///
-  /// Takes the [totalDays] and a localized [l10n] instance to produce a string
-  /// like "1 year, 2 weeks, 3 days". Returns a prompt to start if the streak is zero.
-  String _formatStreakDuration(int totalDays, AppLocalizations l10n) {
-    if (totalDays == 0) return l10n.startFirstDay;
-
-    final int years = totalDays ~/ 365;
-    final int remainingDays = totalDays % 365;
-    final int weeks = remainingDays ~/ 7;
-    final int days = remainingDays % 7;
-
-    final List<String> parts = [];
-    if (years > 0) parts.add("$years ${years == 1 ? l10n.year : l10n.years}");
-    if (weeks > 0) parts.add("$weeks ${l10n.weekShort}");
-    if (days > 0 || parts.isEmpty) {
-      parts.add("$days ${days == 1 ? l10n.day : l10n.days}");
-    }
-
-    final result = parts.join(", ");
-    Logger.debug('Formatted streak duration for $totalDays days: "$result"');
-    return result;
+  /// Returns a motivational message based on streak milestones
+  String _getStreakMessage(int days, AppLocalizations l10n) {
+    if (days == 0) return l10n.startFirstDay;
+    if (days == 1) return l10n.streakFirstDay;
+    if (days < 7) return l10n.streakWeekProgress;
+    if (days == 7) return l10n.streakFirstWeek;
+    if (days < 30) return l10n.streakMonthProgress;
+    if (days == 30) return l10n.streakFirstMonth;
+    if (days < 100) return l10n.streakHundredProgress;
+    if (days == 100) return l10n.streakHundred;
+    if (days < 365) return l10n.streakYearProgress;
+    if (days == 365) return l10n.streakFirstYear;
+    return l10n.streakLegendary;
   }
 
   @override
@@ -106,9 +97,6 @@ class StreakCard extends StatelessWidget {
   }
 
   /// Displays a modal bottom sheet with a detailed weekly view of the user's streak.
-  ///
-  /// This modal shows the formatted streak duration, a grid of the current week's
-  /// activity based on the [activeDates], and a motivational message.
   void _showStreakDetails(BuildContext context) {
     Logger.info('Showing streak details modal.');
     final l10n = AppLocalizations.of(context)!;
@@ -121,6 +109,10 @@ class StreakCard extends StatelessWidget {
     final DateTime today = DateTime(now.year, now.month, now.day);
     final DateTime startOfWeek =
     today.subtract(Duration(days: today.weekday - 1));
+
+    // Calculate progress to next milestone
+    final nextMilestone = _getNextMilestone(streak);
+    final progressToNext = nextMilestone > 0 ? streak / nextMilestone : 1.0;
 
     showModalBottomSheet(
       context: context,
@@ -135,6 +127,7 @@ class StreakCard extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Drag handle
             Container(
               width: 40,
               height: 4,
@@ -144,21 +137,85 @@ class StreakCard extends StatelessWidget {
               ),
             ),
             const Gap(32),
-            const Icon(Icons.local_fire_department_rounded,
-                color: Colors.orange, size: 72),
-            const Gap(12),
-            Text(
-              _formatStreakDuration(streak, l10n),
-              textAlign: TextAlign.center,
-              style:
-              theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
+
+            // 🔥 Big flame icon
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.8, end: 1.0),
+              duration: const Duration(milliseconds: 600),
+              curve: Curves.elasticOut,
+              builder: (context, scale, child) => Transform.scale(
+                scale: scale,
+                child: child,
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      Colors.orange.withValues(alpha: 0.2),
+                      Colors.orange.withValues(alpha: 0.05),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+                child: const Icon(
+                  Icons.local_fire_department_rounded,
+                  color: Colors.orange,
+                  size: 64,
+                ),
+              ),
             ),
-            const Gap(4),
+
+            const Gap(20),
+
+            // ✨ Main streak number - HERO
             Text(
-              l10n.streakSuffix,
-              style: theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor),
+              '$streak',
+              style: theme.textTheme.displayLarge?.copyWith(
+                fontWeight: FontWeight.w900,
+                fontSize: 72,
+                height: 1.0,
+                color: Colors.orange,
+                letterSpacing: -2,
+              ),
             ),
-            const Gap(32),
+
+            const Gap(8),
+
+            // Simple, clean subtitle
+            Text(
+              streak == 1 ? l10n.streakDaySingular : l10n.streakDaysPlural,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
+            ),
+
+            const Gap(24),
+
+            // Progress bar to next milestone
+            if (nextMilestone > 0) ...[
+              _ProgressToMilestone(
+                current: streak,
+                target: nextMilestone,
+                progress: progressToNext,
+                l10n: l10n,
+              ),
+              const Gap(32),
+            ] else
+              const Gap(16),
+
+            // Week view
+            Text(
+              l10n.thisWeek,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: theme.hintColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const Gap(16),
+
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: List.generate(7, (index) {
@@ -172,53 +229,164 @@ class StreakCard extends StatelessWidget {
                     dayDate.month == today.month &&
                     dayDate.day == today.day;
 
+                final bool isFuture = dayDate.isAfter(today);
+
                 int dayLabelIndex = (index + 1) % 7;
 
-                return Column(
-                  children: [
-                    Text(
-                      weekDaysNames[dayLabelIndex],
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                        color: isToday ? Colors.orange : theme.hintColor,
+                return Opacity(
+                  opacity: isFuture ? 0.3 : 1.0,
+                  child: Column(
+                    children: [
+                      Text(
+                        weekDaysNames[dayLabelIndex],
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontWeight:
+                          isToday ? FontWeight.bold : FontWeight.normal,
+                          color: isToday
+                              ? Colors.orange
+                              : theme.hintColor.withValues(alpha: 0.7),
+                          fontSize: 11,
+                        ),
                       ),
-                    ),
-                    const Gap(12),
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        color: isRecorded
-                            ? Colors.orange
-                            : Colors.orange.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                        border: isToday
-                            ? Border.all(color: Colors.orange, width: 2)
+                      const Gap(10),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: isRecorded
+                              ? Colors.orange
+                              : theme.colorScheme.surfaceContainerHighest
+                              .withValues(alpha: 0.5),
+                          shape: BoxShape.circle,
+                          border: isToday
+                              ? Border.all(color: Colors.orange, width: 2.5)
+                              : null,
+                          boxShadow: isRecorded
+                              ? [
+                            BoxShadow(
+                              color: Colors.orange
+                                  .withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              spreadRadius: 1,
+                            )
+                          ]
+                              : null,
+                        ),
+                        child: isRecorded
+                            ? const Icon(Icons.check_rounded,
+                            size: 18, color: Colors.white)
                             : null,
                       ),
-                      child: isRecorded
-                          ? const Icon(Icons.check_rounded,
-                          size: 16, color: Colors.white)
-                          : null,
-                    ),
-                  ],
+                    ],
+                  ),
                 );
               }),
             ),
-            const Gap(40),
-            Text(
-              streak > 0 ? l10n.streakLongMessage(streak) : l10n.addMemory,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontStyle: FontStyle.italic,
-                color:
-                theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.8),
+
+            const Gap(32),
+
+            // Motivational message
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.orange.withValues(alpha: 0.15),
+                ),
+              ),
+              child: Text(
+                _getStreakMessage(streak, l10n),
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.orange[900],
+                  height: 1.4,
+                ),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  /// Get next milestone target
+  int _getNextMilestone(int current) {
+    const milestones = [7, 14, 30, 50, 100, 200, 365, 500, 1000];
+    for (final milestone in milestones) {
+      if (current < milestone) return milestone;
+    }
+    return 0; // No more milestones
+  }
+}
+
+/// Progress bar widget showing progress to next milestone
+class _ProgressToMilestone extends StatelessWidget {
+  final int current;
+  final int target;
+  final double progress;
+  final AppLocalizations l10n;
+
+  const _ProgressToMilestone({
+    required this.current,
+    required this.target,
+    required this.progress,
+    required this.l10n,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final remaining = target - current;
+
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              l10n.nextMilestone,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.hintColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            Text(
+              l10n.daysRemaining(remaining),
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: Colors.orange,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        const Gap(8),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: progress),
+            duration: const Duration(milliseconds: 800),
+            curve: Curves.easeOutCubic,
+            builder: (context, value, child) => LinearProgressIndicator(
+              value: value,
+              minHeight: 8,
+              backgroundColor:
+              theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
+            ),
+          ),
+        ),
+        const Gap(6),
+        Text(
+          '$current / $target ${l10n.days}',
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.hintColor.withValues(alpha: 0.7),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 }

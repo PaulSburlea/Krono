@@ -20,6 +20,23 @@
   "day": "day",
   "days": "days",
 
+  "streakDaySingular": "Day Streak",
+  "streakDaysPlural": "Days Streak",
+  "thisWeek": "This Week",
+  "nextMilestone": "Next milestone",
+  "daysRemaining": "{count} days to go",
+
+  "streakFirstDay": "Great start! Come back tomorrow! 🌟",
+  "streakWeekProgress": "You're building a habit! Keep it up! 💪",
+  "streakFirstWeek": "One week! You're on fire! 🔥",
+  "streakMonthProgress": "Incredible consistency! Don't break the chain! ⛓️",
+  "streakFirstMonth": "30 days! You're a memory-keeping champion! 🏆",
+  "streakHundredProgress": "You're unstoppable! Keep going! 🚀",
+  "streakHundred": "100 days! Legendary status achieved! ⭐",
+  "streakYearProgress": "You're a journaling master! Almost there! 👑",
+  "streakFirstYear": "365 days! A full year of memories! 🎉",
+  "streakLegendary": "You're a legend! Your dedication is inspiring! 💎",
+
   "yourMemories": "Your Memories",
   "quoteTitle": "Quote of the Day",
   "streakSuffix": "Day Streak!",
@@ -202,5 +219,24 @@
   "onboardingTitle1": "Your Life in Photos",
   "onboardingDesc1": "Capture one photo every day. Build a timeline of memories that you can cherish forever.",
   "onboardingTitle2": "100% Private & Offline",
-  "onboardingDesc2": "Your memories stay on your device. No tracking, no cloud uploads, no data collection."
+  "onboardingDesc2": "Your memories stay on your device. No tracking, no cloud uploads, no data collection.",
+
+  "themeCrimson": "Crimson",
+  "themeAmethyst": "Amethyst",
+  "themeGold": "Gold",
+  "themeTurquoise": "Turquoise",
+  "themeRose": "Rose",
+  "themeSapphire": "Sapphire",
+
+  "update": "Update",
+  "remove": "Remove",
+
+  "discardChangesTitle": "Discard this memory?",
+  "discardChangesMessage": "You haven't saved yet. Leaving now will delete this entry permanently. Are you sure?",
+  "discard": "Discard",
+
+  "notificationPromptTitle": "Keep the streak alive!",
+  "notificationPromptBody": "Great job on your first memory! Set a daily reminder so you never forget to capture the moment.",
+  "maybeLater": "Maybe Later",
+  "setReminder": "Set Reminder"
 }

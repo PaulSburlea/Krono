@@ -26,38 +26,28 @@ Future<String?> processAndSaveImage(dynamic rawArgs) async {
     final double targetAspect = args['aspect'] as double? ?? (3 / 4);
 
     final file = File(path);
-    if (!await file.exists()) {
-      Logger.warning('Image processing skipped: Source file not found at $path');
-      return null;
-    }
+    if (!await file.exists()) return null;
 
-    // Optimization: Read only metadata first to avoid decoding the full image
-    // if it is not strictly necessary.
+    // OPTIMIZATION: Read bytes once into memory
     final bytes = await file.readAsBytes();
+
+    // Quick check for format without full decode
     final decoder = img.findDecoderForData(bytes);
-    if (decoder == null) {
-      Logger.warning('Image processing skipped: Unsupported image format.');
-      return path;
-    }
+    if (decoder == null) return path;
 
     final info = decoder.startDecode(bytes);
-    if (info == null) {
-      Logger.warning('Image processing skipped: Could not decode image headers.');
-      return path;
-    }
+    if (info == null) return path;
 
     final int width = info.width;
     final int height = info.height;
 
-    // Calculate current aspect ratio (normalized to < 1.0 for portrait comparison)
     double currentAspect = width < height ? width / height : height / width;
     bool needsCrop = (currentAspect - targetAspect).abs() > 0.05;
 
-    // --- FAST PATH (Native Compression) ---
-    // Use native compression if no geometric transformations (mirror/crop) are required.
-    // This is significantly faster and uses less memory.
+    // --- FAST PATH ---
     if (!mirror && !needsCrop) {
-      Logger.debug('Using fast native path (no transformations needed).');
+      // If native compression is used, we don't need the bytes in memory anymore.
+      // FlutterImageCompress reads from file path directly, which is efficient.
       final result = await FlutterImageCompress.compressAndGetFile(
         path,
         path,
@@ -67,26 +57,19 @@ Future<String?> processAndSaveImage(dynamic rawArgs) async {
       return result?.path ?? path;
     }
 
-    // --- HYBRID PATH (Dart Image Library) ---
-    // Perform geometric transformations using the Dart image library.
-    // This path is taken if the user is using the front camera (mirroring)
-    // or if the aspect ratio does not match the target.
+    // --- HYBRID PATH ---
     if (mirror || needsCrop) {
-      Logger.debug('Using hybrid path (mirror: $mirror, crop: $needsCrop).');
-
-      // 1. Decode the full image
+      // OPTIMIZATION: Decode only what we need.
+      // Since we already have 'bytes', we pass them directly.
       img.Image? image = img.decodeImage(bytes);
       if (image == null) return path;
 
-      // 2. Bake orientation (EXIF) to ensure correct rotation before editing
       image = img.bakeOrientation(image);
 
-      // 3. Apply mirroring for front camera selfies
       if (mirror) {
         image = img.flipHorizontal(image);
       }
 
-      // 4. Crop to target aspect ratio if necessary
       if (needsCrop) {
         int imgW = image.width;
         int imgH = image.height;
@@ -100,6 +83,7 @@ Future<String?> processAndSaveImage(dynamic rawArgs) async {
           cropHeight = (imgW / targetAspect).toInt();
         }
 
+        // OPTIMIZATION: Use integer division for speed
         final int x = (imgW - cropWidth) ~/ 2;
         final int y = (imgH - cropHeight) ~/ 2;
 
@@ -112,30 +96,28 @@ Future<String?> processAndSaveImage(dynamic rawArgs) async {
         );
       }
 
-      // 5. Resize if the image is excessively large (>3000px) to save space
       if (image.width > 3000) {
-        image = img.copyResize(image, width: 3000);
+        // OPTIMIZATION: Use average interpolation for better quality/speed balance on downscale
+        image = img.copyResize(
+            image,
+            width: 3000,
+            interpolation: img.Interpolation.average
+        );
       }
 
-      // 6. Encode to JPEG with 85% quality
+      // Encode
       final jpg = img.encodeJpg(image, quality: 85);
 
-      // 7. Release memory reference
+      // Explicitly null out image to help GC before writing file
       image = null;
 
-      // 8. Overwrite the original file with the processed data
       await file.writeAsBytes(jpg, flush: true);
-      Logger.debug('Image processing completed (hybrid path).');
-
       return path;
     }
 
     return path;
   } catch (e, st) {
     Logger.error("ImageProcessor failed", e, st);
-    // Return original path on failure to avoid losing the capture
-    return (rawArgs is Map && rawArgs['path'] is String)
-        ? rawArgs['path']
-        : null;
+    return (rawArgs is Map && rawArgs['path'] is String) ? rawArgs['path'] : null;
   }
 }

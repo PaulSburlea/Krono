@@ -20,6 +20,23 @@
   "day": "jour",
   "days": "jours",
 
+  "streakDaySingular": "Jour de Série",
+  "streakDaysPlural": "Jours de Série",
+  "thisWeek": "Cette Semaine",
+  "nextMilestone": "Prochain jalon",
+  "daysRemaining": "{count} jours restants",
+
+  "streakFirstDay": "Excellent début ! Revenez demain ! 🌟",
+  "streakWeekProgress": "Vous créez une habitude ! Continuez ! 💪",
+  "streakFirstWeek": "Une semaine ! Vous êtes en feu ! 🔥",
+  "streakMonthProgress": "Cohérence incroyable ! Ne cassez pas la chaîne ! ⛓️",
+  "streakFirstMonth": "30 jours ! Vous êtes un champion de la mémoire ! 🏆",
+  "streakHundredProgress": "Vous êtes imbattable ! Continuez ! 🚀",
+  "streakHundred": "100 jours ! Statut légendaire atteint ! ⭐",
+  "streakYearProgress": "Vous êtes un maître du journal ! Presque là ! 👑",
+  "streakFirstYear": "365 jours ! Une année complète de souvenirs ! 🎉",
+  "streakLegendary": "Vous êtes une légende ! Votre dévouement inspire ! 💎",
+
   "yourMemories": "Vos Souvenirs",
   "quoteTitle": "Citation du jour",
   "streakSuffix": "Jours de série !",
@@ -202,5 +219,24 @@
   "onboardingTitle1": "Votre vie en photos",
   "onboardingDesc1": "Capturez une photo chaque jour. Construisez une chronologie de souvenirs à chérir pour toujours.",
   "onboardingTitle2": "100% Privé et Hors ligne",
-  "onboardingDesc2": "Vos souvenirs restent sur votre appareil. Pas de suivi, pas de cloud, pas de collecte de données."
+  "onboardingDesc2": "Vos souvenirs restent sur votre appareil. Pas de suivi, pas de cloud, pas de collecte de données.",
+
+  "themeCrimson": "Cramoisi",
+  "themeAmethyst": "Améthyste",
+  "themeGold": "Or",
+  "themeTurquoise": "Turquoise",
+  "themeRose": "Rose",
+  "themeSapphire": "Saphir",
+
+  "update": "Mettre à jour",
+  "remove": "Supprimer",
+
+  "discardChangesTitle": "Abandonner ce souvenir ?",
+  "discardChangesMessage": "Vous n'avez pas sauvegardé. Si vous quittez, cette entrée sera définitivement effacée.",
+  "discard": "Abandonner",
+
+  "notificationPromptTitle": "Gardez la série en vie !",
+  "notificationPromptBody": "Bravo pour votre premier souvenir ! Définissez un rappel quotidien pour ne jamais oublier de capturer l'instant.",
+  "maybeLater": "Plus tard",
+  "setReminder": "Définir un rappel"
 }

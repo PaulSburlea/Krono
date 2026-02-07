@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,13 +13,32 @@ import 'package:drift/drift.dart' show InsertMode;
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/database/database.dart';
 import '../../settings/providers/locale_provider.dart';
+import '../../settings/providers/theme_provider.dart';
 import '../../../core/utils/logger_service.dart';
 import '../../../core/utils/weather_service.dart';
 import '../data/journal_repository.dart';
 import '../data/models/journal_entry.dart';
 import 'widgets/camera/custom_camera_screen.dart';
 
+/// Helper class to prevent excessive disk writes while typing.
+class Debouncer {
+  final int milliseconds;
+  Timer? _timer;
+
+  Debouncer({required this.milliseconds});
+
+  void run(VoidCallback action) {
+    _timer?.cancel();
+    _timer = Timer(Duration(milliseconds: milliseconds), action);
+  }
+
+  void dispose() {
+    _timer?.cancel();
+  }
+}
+
 /// A screen for creating a new journal entry or editing an existing one.
+/// Includes Draft Auto-Save, Date Anchoring, and Metadata Management.
 class AddEntryScreen extends ConsumerStatefulWidget {
   final JournalEntry? entry;
   final DateTime? initialDate;
@@ -29,131 +50,328 @@ class AddEntryScreen extends ConsumerStatefulWidget {
   ConsumerState<AddEntryScreen> createState() => _AddEntryScreenState();
 }
 
-class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
+class _AddEntryScreenState extends ConsumerState<AddEntryScreen> with WidgetsBindingObserver {
+  // State variables
   String? _imagePath;
   int _mood = 3;
   String? _location;
   String? _weatherTemp;
   String? _weatherIcon;
-
-  // Flag to track if the source image is temporary (from camera)
   bool _isImageTemporary = false;
 
   late final TextEditingController _noteController;
   bool _isSaving = false;
   bool _isLoadingMetadata = false;
+  bool _hasUnsavedChanges = false;
+
+  // Debouncer for text saving
+  final _textDebouncer = Debouncer(milliseconds: 500);
+
+  /// The date this entry is anchored to.
+  late DateTime _anchoredDate;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+
+    // 1. Anchor the date immediately
+    _anchoredDate = widget.initialDate ?? widget.entry?.date ?? DateTime.now();
+
     _noteController = TextEditingController(text: widget.entry?.note ?? '');
 
+    // 2. Initialize state or load draft
     if (widget.entry != null) {
       _imagePath = widget.entry!.photoPath;
       _mood = widget.entry!.moodRating;
       _location = widget.entry!.location;
       _weatherTemp = widget.entry!.weatherTemp;
       _weatherIcon = widget.entry!.weatherIcon;
-    } else if (widget.initialImagePath != null) {
+    } else {
       _imagePath = widget.initialImagePath;
-      // Assume images passed directly are from the camera (temporary)
-      _isImageTemporary = true;
+      _isImageTemporary = widget.initialImagePath != null;
+      if (_imagePath != null) _hasUnsavedChanges = true;
+      _loadDraft();
     }
+
+    // 3. Listen to text changes for Auto-Save and Dirty State
+    _noteController.addListener(() {
+      if (!_hasUnsavedChanges && _noteController.text.isNotEmpty) {
+        setState(() => _hasUnsavedChanges = true);
+      }
+      _textDebouncer.run(() => _saveDraft());
+    });
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _textDebouncer.dispose();
     _noteController.dispose();
     super.dispose();
   }
 
+  // --- LIFECYCLE & DRAFT LOGIC ---
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      _saveDraft();
+    }
+  }
+
+  Future<void> _saveDraft() async {
+    if (widget.entry != null) return;
+    if (_imagePath == null && _noteController.text.isEmpty && _location == null) return;
+
+    // Mark as dirty if not already
+    if (!_hasUnsavedChanges) {
+      setState(() => _hasUnsavedChanges = true);
+    }
+
+    try {
+      final prefs = ref.read(sharedPreferencesProvider);
+      final draftData = {
+        'imagePath': _imagePath,
+        'mood': _mood,
+        'note': _noteController.text,
+        'location': _location,
+        'weatherTemp': _weatherTemp,
+        'weatherIcon': _weatherIcon,
+        'isImageTemporary': _isImageTemporary,
+        'anchoredDate': _anchoredDate.toIso8601String(),
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      };
+      await prefs.setString('journal_draft', jsonEncode(draftData));
+    } catch (e) {
+      Logger.error('Failed to save draft.', e, StackTrace.current);
+    }
+  }
+
+  Future<void> _loadDraft() async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    final draftString = prefs.getString('journal_draft');
+
+    if (draftString != null) {
+      try {
+        final data = jsonDecode(draftString);
+        final savedAnchorDate = DateTime.parse(data['anchoredDate']);
+
+        setState(() {
+          _anchoredDate = savedAnchorDate;
+          _imagePath = data['imagePath'];
+          _mood = data['mood'] ?? 3;
+          if (_noteController.text != (data['note'] ?? '')) {
+            _noteController.text = data['note'] ?? '';
+          }
+          _location = data['location'];
+          _weatherTemp = data['weatherTemp'];
+          _weatherIcon = data['weatherIcon'];
+          _isImageTemporary = data['isImageTemporary'] ?? false;
+          _hasUnsavedChanges = true;
+        });
+        Logger.info('Draft restored. Entry anchored to: $_anchoredDate');
+      } catch (e) {
+        Logger.error('Failed to load draft.', e, StackTrace.current);
+      }
+    }
+  }
+
+  Future<void> _clearDraft() async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.remove('journal_draft');
+  }
+
+  // --- EXIT CONFIRMATION ---
+
+  Future<bool> _onWillPop() async {
+    if (!_hasUnsavedChanges || _isSaving || widget.entry != null) {
+      await _clearDraft();
+      return true;
+    }
+
+    final l10n = AppLocalizations.of(context)!;
+    final shouldDiscard = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.discardChangesTitle),
+        content: Text(l10n.discardChangesMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: Text(l10n.discard),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDiscard == true) {
+      await _clearDraft();
+      return true;
+    }
+    return false;
+  }
+
+  // --- METADATA LOGIC ---
+
+  void _handleMetadataInteraction({required bool isLocation}) {
+    final bool hasData = isLocation ? _location != null : _weatherTemp != null;
+    final bool isToday = DateUtils.isSameDay(_anchoredDate, DateTime.now());
+
+    if (hasData) {
+      _showMetadataOptions(isLocation: isLocation, canUpdate: isToday);
+    } else if (isToday) {
+      _fetchMetadata();
+    }
+  }
+
+  void _showMetadataOptions({required bool isLocation, required bool canUpdate}) {
+    final l10n = AppLocalizations.of(context)!;
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (canUpdate)
+              ListTile(
+                leading: const Icon(Icons.refresh_rounded),
+                title: Text(l10n.update),
+                onTap: () {
+                  Navigator.pop(context);
+                  _fetchMetadata();
+                },
+              ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+              title: Text(l10n.remove, style: const TextStyle(color: Colors.red)),
+              onTap: () {
+                Navigator.pop(context);
+                setState(() {
+                  if (isLocation) {
+                    _location = null;
+                  } else {
+                    _weatherTemp = null;
+                    _weatherIcon = null;
+                  }
+                });
+                _saveDraft();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _fetchMetadata() async {
-    Logger.info('Attempting to fetch location and weather metadata.');
+    Logger.info('Fetching metadata...');
     final l10n = AppLocalizations.of(context)!;
     setState(() => _isLoadingMetadata = true);
 
     try {
-      await Geolocator.isLocationServiceEnabled();
       LocationPermission permission = await Geolocator.checkPermission();
-
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          Logger.warning('User denied location permission.');
           _showErrorSnackBar(l10n.locationPermissionDenied);
           return;
         }
       }
-
       if (permission == LocationPermission.deniedForever) {
-        Logger.warning('User has permanently denied location permission.');
-        if (mounted) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text(l10n.locationPermissionDenied),
-              content: Text(l10n.enableLocationMessage),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(l10n.cancel),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Logger.info('User tapped "Open Settings" for location permission.');
-                    Navigator.pop(context);
-                    Geolocator.openAppSettings();
-                  },
-                  child: Text(l10n.openSettings),
-                ),
-              ],
-            ),
-          );
-        }
+        _showErrorSnackBar(l10n.locationPermissionDenied);
         return;
       }
 
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(accuracy: LocationAccuracy.low),
-      ).timeout(const Duration(seconds: 15));
-      Logger.debug('Successfully retrieved GPS position: ${position.latitude}, ${position.longitude}');
+      ).timeout(const Duration(seconds: 10));
 
-      try {
-        final langCode = ref.read(localeProvider).languageCode;
-        await setLocaleIdentifier(langCode);
+      final langCode = ref.read(localeProvider).languageCode;
 
-        final placemarks = await placemarkFromCoordinates(
-          position.latitude,
-          position.longitude,
-        );
-
-        if (placemarks.isNotEmpty) {
-          final p = placemarks.first;
-          setState(() => _location = "${p.locality}, ${p.administrativeArea}");
-        }
-
-        final weatherData = await ref.read(weatherServiceProvider).fetchWeather(
+      await Future.wait([
+        placemarkFromCoordinates(position.latitude, position.longitude).then((placemarks) {
+          if (placemarks.isNotEmpty) {
+            final p = placemarks.first;
+            setState(() => _location = "${p.locality}, ${p.administrativeArea}");
+          }
+        }),
+        ref.read(weatherServiceProvider).fetchWeather(
           lat: position.latitude,
           lon: position.longitude,
           langCode: langCode,
-        );
+        ).then((weatherData) {
+          setState(() {
+            _weatherTemp = weatherData.temperature;
+            _weatherIcon = weatherData.iconCode;
+          });
+        }),
+      ]);
 
-        setState(() {
-          _weatherTemp = weatherData.temperature;
-          _weatherIcon = weatherData.iconCode;
-        });
-        Logger.debug('Successfully fetched metadata. Location: $_location, Weather: $_weatherTemp');
-      } on SocketException catch (e, stack) {
-        Logger.error('Network error while fetching metadata.', e, stack);
-        _showErrorSnackBar(l10n.noInternetError);
-      } catch (e, stack) {
-        Logger.error('Failed to fetch geocoding or weather data.', e, stack);
-      }
-    } catch (e, stack) {
-      Logger.error('Failed to get device location.', e, stack);
-      _showErrorSnackBar(l10n.locationDisabled);
+      _saveDraft();
+
+    } catch (e) {
+      Logger.error('Metadata fetch error', e, StackTrace.current);
+      _showErrorSnackBar(l10n.noInternetError);
     } finally {
       if (mounted) setState(() => _isLoadingMetadata = false);
+    }
+  }
+
+  // --- SAVE LOGIC ---
+
+  Future<void> _saveEntry() async {
+    if (_imagePath == null) return;
+
+    Logger.info('Saving entry for date: $_anchoredDate');
+    setState(() => _isSaving = true);
+    HapticFeedback.mediumImpact();
+
+    try {
+      final repo = ref.read(journalRepositoryProvider);
+      final db = ref.read(databaseProvider);
+
+      final journalEntry = JournalEntry(
+        id: widget.entry?.id,
+        date: _anchoredDate,
+        photoPath: _imagePath!,
+        thumbnailPath: widget.entry?.thumbnailPath,
+        moodRating: _mood,
+        note: _noteController.text,
+        location: _location,
+        weatherTemp: _weatherTemp,
+        weatherIcon: _weatherIcon,
+      );
+
+      if (widget.entry != null) {
+        final bool imageChanged = _imagePath != widget.entry!.photoPath;
+        await repo.updateEntry(
+          journalEntry,
+          newTempPath: imageChanged ? _imagePath : null,
+          deleteSource: imageChanged ? _isImageTemporary : false,
+        );
+      } else {
+        await repo.addEntry(journalEntry, _imagePath!, deleteSource: _isImageTemporary);
+        await _clearDraft();
+      }
+
+      final normalizedDate = DateTime(_anchoredDate.year, _anchoredDate.month, _anchoredDate.day);
+      await db.into(db.activityLog).insert(
+        ActivityLogCompanion.insert(date: normalizedDate),
+        mode: InsertMode.insertOrIgnore,
+      );
+
+      if (mounted) Navigator.pop(context, true);
+    } catch (e, stack) {
+      Logger.error('Failed to save journal entry.', e, stack);
+      if (mounted) _showErrorSnackBar("Error saving entry");
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
@@ -168,61 +386,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
     );
   }
 
-  /// Validates and persists the journal entry to the local database.
-  Future<void> _saveEntry() async {
-    if (_imagePath == null) return;
-
-    Logger.info('User initiated save for journal entry.');
-    setState(() => _isSaving = true);
-    HapticFeedback.mediumImpact();
-
-    try {
-      final repo = ref.read(journalRepositoryProvider);
-      final db = ref.read(databaseProvider);
-      final entryDate = widget.initialDate ?? widget.entry?.date ?? DateTime.now();
-
-      final journalEntry = JournalEntry(
-        id: widget.entry?.id,
-        date: entryDate,
-        photoPath: _imagePath!,
-        thumbnailPath: widget.entry?.thumbnailPath,
-        moodRating: _mood,
-        note: _noteController.text,
-        location: _location,
-        weatherTemp: _weatherTemp,
-        weatherIcon: _weatherIcon,
-      );
-
-      if (widget.entry != null) {
-        final bool imageChanged = _imagePath != widget.entry!.photoPath;
-        Logger.info('Updating existing entry ID: ${widget.entry!.id}. Image changed: $imageChanged');
-        await repo.updateEntry(
-          journalEntry,
-          newTempPath: imageChanged ? _imagePath : null,
-          deleteSource: imageChanged ? _isImageTemporary : false,
-        );
-      } else {
-        Logger.info('Adding new entry.');
-        await repo.addEntry(journalEntry, _imagePath!, deleteSource: _isImageTemporary);
-      }
-
-      final normalizedDate = DateTime(entryDate.year, entryDate.month, entryDate.day);
-      await db.into(db.activityLog).insert(
-        ActivityLogCompanion.insert(date: normalizedDate),
-        mode: InsertMode.insertOrIgnore,
-      );
-      Logger.info('Activity log updated for date: $normalizedDate');
-
-      if (mounted) Navigator.pop(context, true);
-    } catch (e, stack) {
-      Logger.error('Failed to save journal entry.', e, stack);
-      if (mounted) {
-        _showErrorSnackBar("Error: ${e.toString()}");
-      }
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
-    }
-  }
+  // --- UI BUILD ---
 
   @override
   Widget build(BuildContext context) {
@@ -230,108 +394,148 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          widget.entry != null ? l10n.editEntry : l10n.moodTitle,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+    final bool isToday = DateUtils.isSameDay(_anchoredDate, DateTime.now());
+
+    // Calculăm padding-ul de jos pentru a evita suprapunerea cu bara de navigare
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final shouldPop = await _onWillPop();
+        if (shouldPop && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            widget.entry != null ? l10n.editEntry : l10n.moodTitle,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          leading: IconButton(
+            icon: const Icon(Icons.close_rounded),
+            onPressed: () async {
+              final shouldPop = await _onWillPop();
+              if (shouldPop && context.mounted) {
+                Navigator.of(context).pop();
+              }
+            },
+          ),
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.close_rounded),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _PhotoPlaceholder(
-              imagePath: _imagePath,
-              heroTag: widget.entry != null ? 'photo_${widget.entry!.id}' : 'add_photo',
-              onTap: () => _showImageSourceSheet(context, l10n),
-            ),
-            const Gap(24),
-            Text(l10n.myMood, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            const Gap(12),
-            _MoodSelector(
-              currentMood: _mood,
-              onMoodSelected: (val) {
-                Logger.info('Mood changed to: $val');
-                setState(() => _mood = val);
-              },
-            ),
-            const Gap(24),
-            IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    child: _MetadataCard(
-                      icon: Icons.location_on_rounded,
-                      label: _location ?? l10n.addLocation,
-                      isSelected: _location != null,
-                      onTap: _fetchMetadata,
-                      isLoading: _isLoadingMetadata,
-                    ),
-                  ),
-                  const Gap(12),
-                  Expanded(
-                    child: _MetadataCard(
-                      icon: Icons.wb_cloudy_rounded,
-                      label: _weatherTemp ?? l10n.addWeather,
-                      isSelected: _weatherTemp != null,
-                      onTap: _fetchMetadata,
-                      isLoading: _isLoadingMetadata,
-                      weatherIcon: _weatherIcon,
-                    ),
-                  ),
-                ],
+        body: SingleChildScrollView(
+          // ✅ FIX: Adăugăm bottomPadding la padding-ul existent
+          padding: EdgeInsets.fromLTRB(24, 12, 24, 24 + bottomPadding),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _PhotoPlaceholder(
+                imagePath: _imagePath,
+                heroTag: widget.entry != null ? 'photo_${widget.entry!.id}' : 'add_photo',
+                onTap: () => _showImageSourceSheet(context, l10n),
               ),
-            ),
-            const Gap(24),
-            Text(l10n.noteHint, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            const Gap(12),
-            TextField(
-              controller: _noteController,
-              maxLines: 4,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                hintText: l10n.writeMemory,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide.none,
+              const Gap(24),
+
+              Text(l10n.myMood, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+              const Gap(12),
+
+              _MoodSelector(
+                currentMood: _mood,
+                onMoodSelected: (val) {
+                  setState(() => _mood = val);
+                  _saveDraft();
+                },
+              ),
+              const Gap(24),
+
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: _MetadataCard(
+                        icon: Icons.location_on_rounded,
+                        label: _location ?? l10n.addLocation,
+                        isSelected: _location != null,
+                        isEnabled: (_location != null) || isToday,
+                        onTap: () => _handleMetadataInteraction(isLocation: true),
+                        isLoading: _isLoadingMetadata,
+                      ),
+                    ),
+                    const Gap(12),
+                    Expanded(
+                      child: _MetadataCard(
+                        icon: Icons.wb_cloudy_rounded,
+                        label: _weatherTemp ?? l10n.addWeather,
+                        isSelected: _weatherTemp != null,
+                        isEnabled: (_weatherTemp != null) || isToday,
+                        onTap: () => _handleMetadataInteraction(isLocation: false),
+                        isLoading: _isLoadingMetadata,
+                        weatherIcon: _weatherIcon,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-            const Gap(40),
-            SizedBox(
-              width: double.infinity,
-              height: 60,
-              child: FilledButton(
-                onPressed: _isSaving || _imagePath == null ? null : _saveEntry,
-                style: FilledButton.styleFrom(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: colorScheme.onPrimary,
+
+              if (!isToday && _location == null && _weatherTemp == null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8, left: 4),
+                  child: Text(
+                    "Metadata is only available for today's entries.",
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
                 ),
-                child: _isSaving
-                    ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
-                    : Text(l10n.saveDay, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+
+              const Gap(24),
+
+              Text(l10n.noteHint, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+              const Gap(12),
+
+              TextField(
+                controller: _noteController,
+                maxLines: 4,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                  hintText: l10n.writeMemory,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
               ),
-            ),
-            const Gap(24),
-          ],
+              const Gap(40),
+
+              SizedBox(
+                width: double.infinity,
+                height: 60,
+                child: FilledButton(
+                  onPressed: _isSaving || _imagePath == null ? null : _saveEntry,
+                  style: FilledButton.styleFrom(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    backgroundColor: colorScheme.primary,
+                    foregroundColor: colorScheme.onPrimary,
+                  ),
+                  child: _isSaving
+                      ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+                      : Text(l10n.saveDay, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              // Nu mai e nevoie de Gap(24) aici pentru că am pus padding la SingleChildScrollView
+            ],
+          ),
         ),
       ),
     );
   }
 
-  /// Displays a modal bottom sheet for selecting an image source.
   void _showImageSourceSheet(BuildContext context, AppLocalizations l10n) {
-    Logger.info('Showing image source selection sheet.');
     showModalBottomSheet(
       context: context,
       showDragHandle: true,
@@ -347,16 +551,12 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
                 title: Text(l10n.camera),
                 onTap: () async {
                   Navigator.pop(context);
-                  Logger.info('User selected "Camera" as image source.');
                   final String? photoPath = await Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const CustomCameraScreen()),
                   );
                   if (photoPath != null) {
-                    Logger.info('Image captured from camera: $photoPath');
                     _handleNewImage(photoPath, isTemporary: true);
-                  } else {
-                    Logger.info('Camera action was cancelled by user.');
                   }
                 },
               ),
@@ -365,14 +565,10 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
                 title: Text(l10n.gallery),
                 onTap: () async {
                   Navigator.pop(context);
-                  Logger.info('User selected "Gallery" as image source.');
                   final picker = ImagePicker();
                   final photo = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
                   if (photo != null) {
-                    Logger.info('Image picked from gallery: ${photo.path}');
                     _handleNewImage(photo.path, isTemporary: false);
-                  } else {
-                    Logger.info('Gallery picking was cancelled by user.');
                   }
                 },
               ),
@@ -383,25 +579,22 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
     );
   }
 
-  /// Updates the UI with the new image path and its temporary status.
   void _handleNewImage(String path, {required bool isTemporary}) {
     setState(() {
       _imagePath = path;
       _isImageTemporary = isTemporary;
     });
+    _saveDraft();
   }
 }
 
-/// A widget that displays the selected photo or a placeholder to add one.
+// --- WIDGETS ---
+
 class _PhotoPlaceholder extends StatelessWidget {
-  /// The local file path of the image to display. If null, a placeholder is shown.
   final String? imagePath;
-  /// The Hero animation tag for the photo, ensuring a smooth transition.
   final String heroTag;
-  /// The callback function to execute when the placeholder is tapped.
   final VoidCallback onTap;
 
-  /// Creates a photo placeholder widget.
   const _PhotoPlaceholder({required this.imagePath, required this.heroTag, required this.onTap});
 
   @override
@@ -420,10 +613,7 @@ class _PhotoPlaceholder extends StatelessWidget {
               borderRadius: BorderRadius.circular(32),
               border: Border.all(color: colorScheme.primary.withValues(alpha: 0.1)),
               image: imagePath != null
-                  ? DecorationImage(
-                  image: FileImage(File(imagePath!)),
-                  fit: BoxFit.cover
-              )
+                  ? DecorationImage(image: FileImage(File(imagePath!)), fit: BoxFit.cover)
                   : null,
             ),
             child: imagePath == null
@@ -436,14 +626,10 @@ class _PhotoPlaceholder extends StatelessWidget {
   }
 }
 
-/// A horizontal selector for choosing a mood rating from 1 to 5.
 class _MoodSelector extends StatelessWidget {
-  /// The currently selected mood rating (1-5).
   final int currentMood;
-  /// A callback that is invoked with the new rating when a mood is selected.
   final ValueChanged<int> onMoodSelected;
 
-  /// Creates a mood selector widget.
   const _MoodSelector({required this.currentMood, required this.onMoodSelected});
 
   @override
@@ -465,7 +651,8 @@ class _MoodSelector extends StatelessWidget {
             duration: const Duration(milliseconds: 250),
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: isSelected ? colorScheme.primary : colorScheme.surfaceContainerHigh,
+              // ✅ FIX: Transparent dacă nu e selectat
+              color: isSelected ? colorScheme.primary : Colors.transparent,
               borderRadius: BorderRadius.circular(20),
               boxShadow: isSelected
                   ? [BoxShadow(color: colorScheme.primary.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4))]
@@ -479,26 +666,20 @@ class _MoodSelector extends StatelessWidget {
   }
 }
 
-/// A card for displaying and fetching metadata like location or weather.
 class _MetadataCard extends StatelessWidget {
-  /// The icon representing the type of metadata.
   final IconData icon;
-  /// The text label displaying the metadata value or a prompt.
   final String label;
-  /// A boolean indicating if the metadata has been successfully fetched.
   final bool isSelected;
-  /// The callback function to execute when the card is tapped to fetch data.
+  final bool isEnabled;
   final VoidCallback onTap;
-  /// A boolean to show a loading indicator while data is being fetched.
   final bool isLoading;
-  /// An optional URL for a weather icon to display instead of the default [icon].
   final String? weatherIcon;
 
-  /// Creates a metadata card widget.
   const _MetadataCard({
     required this.icon,
     required this.label,
     required this.isSelected,
+    required this.isEnabled,
     required this.onTap,
     this.isLoading = false,
     this.weatherIcon,
@@ -509,63 +690,67 @@ class _MetadataCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return InkWell(
-      onTap: isLoading ? null : onTap,
+      onTap: (isLoading || !isEnabled) ? null : onTap,
       borderRadius: BorderRadius.circular(20),
-      child: Container(
-        height: 64,
-        alignment: Alignment.centerLeft,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          color: isSelected ? colorScheme.primary.withValues(alpha: 0.08) : colorScheme.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? colorScheme.primary.withValues(alpha: 0.3) : colorScheme.outlineVariant.withValues(alpha: 0.3),
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 200),
+        opacity: isEnabled ? 1.0 : 0.4,
+        child: Container(
+          height: 64,
+          alignment: Alignment.centerLeft,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: isSelected ? colorScheme.primary.withValues(alpha: 0.08) : colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isSelected ? colorScheme.primary.withValues(alpha: 0.3) : colorScheme.outlineVariant.withValues(alpha: 0.3),
+            ),
           ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.max,
-          children: [
-            SizedBox(
-              width: 28,
-              height: 28,
-              child: Center(
-                child: isLoading
-                    ? SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    color: colorScheme.primary,
+          child: Row(
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              SizedBox(
+                width: 28,
+                height: 28,
+                child: Center(
+                  child: isLoading
+                      ? SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: colorScheme.primary,
+                    ),
+                  )
+                      : weatherIcon != null
+                      ? Image.network(
+                    'https://openweathermap.org/img/wn/$weatherIcon@2x.png',
+                    width: 28,
+                    height: 28,
+                    errorBuilder: (_, __, ___) => Icon(icon, size: 20),
+                  )
+                      : Icon(
+                    icon,
+                    size: 20,
+                    color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
                   ),
-                )
-                    : weatherIcon != null
-                    ? Image.network(
-                  'https://openweathermap.org/img/wn/$weatherIcon@2x.png',
-                  width: 28,
-                  height: 28,
-                  errorBuilder: (_, __, ___) => Icon(icon, size: 20),
-                )
-                    : Icon(
-                  icon,
-                  size: 20,
-                  color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
                 ),
               ),
-            ),
-            const Gap(12),
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+              const Gap(12),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

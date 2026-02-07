@@ -28,12 +28,12 @@ class ThemeSelector extends ConsumerWidget {
       // --- Basic Themes ---
       _ThemeModel(name: l10n.themeKrono, color: const Color(0xFF6366F1)),
       _ThemeModel(name: l10n.themeEmerald, color: Colors.teal),
-      _ThemeModel(name: l10n.themeOcean, color: Colors.blue),
-      _ThemeModel(name: l10n.themeSunset, color: Colors.orange),
+     // _ThemeModel(name: l10n.themeOcean, color: Colors.blue),
+      // _ThemeModel(name: l10n.themeSunset, color: Colors.orange),
 
       // --- Premium Themes ---
       // These will automatically wrap to the next line in the grid.
-      _ThemeModel(
+/*      _ThemeModel(
           name: l10n.themeBerry, color: Colors.pink, isPremium: true),
       _ThemeModel(
           name: l10n.themeMidnight, color: Colors.deepPurple, isPremium: true),
@@ -44,7 +44,27 @@ class ThemeSelector extends ConsumerWidget {
       _ThemeModel(
           name: l10n.themeAurora,
           color: const Color(0xFF22D3EE),
+          isPremium: true),*/
+
+
+      // --- Premium Themes ---
+      _ThemeModel(
+          name: l10n.themeGold,
+          color: const Color(0xFFD4AF37), // Gold auriu
           isPremium: true),
+/*      _ThemeModel(
+          name: l10n.themeTurquoise,
+          color: const Color(0xFF06B6D4), // Cyan vibrant
+          isPremium: true),*/
+      _ThemeModel(
+          name: l10n.themeRose,
+          color: const Color(0xFFE11D48), // Rose intens
+          isPremium: true),
+/*      _ThemeModel(
+          name: l10n.themeSapphire,
+          color: const Color(0xFF0F52BA), // Albastru safir
+          isPremium: true),*/
+
     ];
 
     return Container(

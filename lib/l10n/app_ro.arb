@@ -20,6 +20,23 @@
   "day": "zi",
   "days": "zile",
 
+  "streakDaySingular": "Zi de Amintiri",
+  "streakDaysPlural": "Zile de Amintiri",
+  "thisWeek": "Această Săptămână",
+  "nextMilestone": "Următorul obiectiv",
+  "daysRemaining": "{count} zile rămase",
+
+  "streakFirstDay": "Super început! Revino mâine! 🌟",
+  "streakWeekProgress": "Construiești un obicei! Continuă! 💪",
+  "streakFirstWeek": "O săptămână! Ești în flăcări! 🔥",
+  "streakMonthProgress": "Consistență incredibilă! Nu rupe lanțul! ⛓️",
+  "streakFirstMonth": "30 de zile! Ești campion la păstrarea amintirilor! 🏆",
+  "streakHundredProgress": "Ești de neoprit! Continuă! 🚀",
+  "streakHundred": "100 de zile! Status legendar atins! ⭐",
+  "streakYearProgress": "Ești maestru la jurnalism! Aproape acolo! 👑",
+  "streakFirstYear": "365 de zile! Un an întreg de amintiri! 🎉",
+  "streakLegendary": "Ești o legendă! Dedicarea ta inspiră! 💎",
+
   "yourMemories": "Amintirile tale",
   "quoteTitle": "Citatul zilei",
   "streakSuffix": "Zile de Amintiri!",
@@ -202,5 +219,24 @@
   "onboardingTitle1": "Viața ta în fotografii",
   "onboardingDesc1": "Surprinde o fotografie în fiecare zi. Construiește o cronologie a amintirilor pe care să le prețuiești mereu.",
   "onboardingTitle2": "100% Privat și Offline",
-  "onboardingDesc2": "Amintirile tale rămân pe dispozitivul tău. Fără urmărire, fără încărcări în cloud, fără colectare de date"
+  "onboardingDesc2": "Amintirile tale rămân pe dispozitivul tău. Fără urmărire, fără încărcări în cloud, fără colectare de date",
+
+  "themeCrimson": "Stacojiu",
+  "themeAmethyst": "Ametist",
+  "themeGold": "Auriu",
+  "themeTurquoise": "Turcoaz",
+  "themeRose": "Trandafir",
+  "themeSapphire": "Safir",
+
+  "update": "Actualizează",
+  "remove": "Șterge",
+
+  "discardChangesTitle": "Ieși fără să salvezi?",
+  "discardChangesMessage": "Dacă pleci acum, această amintire va fi ștearsă definitiv. Ești sigur?",
+  "discard": "Renunță",
+
+  "notificationPromptTitle": "Menține seria activă!",
+  "notificationPromptBody": "Felicitări pentru prima amintire! Setează un memento zilnic ca să nu uiți să surprinzi momentul.",
+  "maybeLater": "Mai târziu",
+  "setReminder": "Setează Memento"
 }

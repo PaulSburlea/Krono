@@ -7,6 +7,7 @@ import 'package:drift/drift.dart' as drift;
 
 import '../../../core/database/database.dart';
 import '../../../core/providers/streak_provider.dart';
+import '../../../core/providers/date_provider.dart'; // Import the new provider
 import '../../settings/providers/theme_provider.dart';
 import '../../../core/utils/logger_service.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -18,9 +19,6 @@ import 'widgets/quote_card.dart';
 import 'widgets/streak_card.dart';
 
 /// Provides a real-time stream of all [JournalEntry] items from the database.
-///
-/// The entries are sorted in descending chronological order, ensuring the most
-/// recent memories appear first.
 final journalStreamProvider = StreamProvider<List<JournalEntry>>((ref) {
   final db = ref.watch(databaseProvider);
   final query = db.select(db.dayEntries)
@@ -29,25 +27,16 @@ final journalStreamProvider = StreamProvider<List<JournalEntry>>((ref) {
   return query.watch().map((rows) => rows.map((row) => JournalEntry.fromDrift(row)).toList());
 });
 
-/// The main screen of the application, serving as the central hub for the user.
-///
-/// It displays a persistent header with streak information, a daily quote, and
-/// a grid of all journal entries. It also handles loading, error, and empty states.
+/// The main screen of the application.
 class HomeScreen extends ConsumerStatefulWidget {
-  /// Creates the main home screen.
   const HomeScreen({super.key});
 
   @override
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-/// Manages the state for the [HomeScreen], primarily handling the scroll
-/// controller to implement a "back to top" button.
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  /// Controls the scrolling of the main content to detect scroll offset.
   late final ScrollController _scrollController;
-
-  /// Notifies listeners when the "back to top" button should be visible.
   final ValueNotifier<bool> _showBackToTopNotifier = ValueNotifier<bool>(false);
 
   @override
@@ -57,9 +46,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _scrollController.addListener(_scrollListener);
   }
 
-  /// Listens to scroll events to toggle the visibility of the back-to-top button.
-  ///
-  /// The button becomes visible after scrolling down a certain threshold.
   void _scrollListener() {
     if (!_scrollController.hasClients) return;
     final bool shouldShow = _scrollController.offset > 400;
@@ -76,7 +62,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.dispose();
   }
 
-  /// Animates the scroll position back to the top of the page.
   void _scrollToTop() {
     Logger.info('User tapped "Back to Top" button.');
     HapticFeedback.mediumImpact();
@@ -90,6 +75,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final journalAsync = ref.watch(journalStreamProvider);
     final l10n = AppLocalizations.of(context)!;
     final streakState = ref.watch(streakProvider);
+
+    // Watch the current date. This triggers a rebuild at midnight.
+    final now = ref.watch(currentDateProvider);
 
     final double topPadding = MediaQuery.paddingOf(context).top;
     final double systemBottomPadding = MediaQuery.of(context).padding.bottom;
@@ -144,7 +132,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               if (entries.isEmpty)
                 SliverFillRemaining(hasScrollBody: false, child: _EmptyJournalState(l10n: l10n))
               else
-                ...JournalGrid.sliversFor(entries, context),
+              // Pass the reactive 'now' date to the grid
+                ...JournalGrid.sliversFor(entries, context, now),
               SliverGap(contentBottomPadding),
             ],
           );
@@ -180,7 +169,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ElevatedButton(
                           onPressed: () {
                             Logger.info('User tapped "Retry" on journal stream error.');
-                            // Explicitly discard the result to satisfy 'unused_result' warning.
                             final _ = ref.refresh(journalStreamProvider);
                           },
                           child: Text(l10n.retry)),
@@ -195,7 +183,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  /// Builds a shimmer loading placeholder widget to indicate that content is being fetched.
   Widget _buildLoadingShimmer() {
     return ListView.builder(
       itemCount: 6,
@@ -220,18 +207,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-/// A small, animated Floating Action Button that appears when the user scrolls down.
-///
-/// Tapping it scrolls the view back to the top.
 class _BackToTopButton extends StatelessWidget {
-  /// Determines if the button is currently visible.
   final bool isVisible;
-  /// The callback function executed when the button is pressed.
   final VoidCallback onPressed;
-  /// The vertical offset from the bottom of the screen.
   final double bottomOffset;
 
-  /// Creates a back-to-top button.
   const _BackToTopButton({required this.isVisible, required this.onPressed, required this.bottomOffset});
 
   @override
@@ -254,14 +234,9 @@ class _BackToTopButton extends StatelessWidget {
   }
 }
 
-/// A widget displayed in the center of the screen when the journal is empty.
-///
-/// It provides a message and a call-to-action button to create the first entry.
 class _EmptyJournalState extends StatelessWidget {
-  /// The localization instance for displaying text.
   final AppLocalizations l10n;
 
-  /// Creates the empty state widget.
   const _EmptyJournalState({required this.l10n});
 
   @override
@@ -290,21 +265,12 @@ class _EmptyJournalState extends StatelessWidget {
   }
 }
 
-/// A custom [SliverPersistentHeaderDelegate] for the home screen's app bar.
-///
-/// It displays the app title, a theme toggle button, and the [StreakCard].
-/// The background becomes semi-opaque with a shadow when scrolled.
 class _HeaderDelegate extends SliverPersistentHeaderDelegate {
-  /// The user's current streak count.
   final int streakCount;
-  /// The list of dates with journal entries, used by the [StreakCard].
   final List<DateTime> activeDates;
-  /// The height of the top safe area (status bar/notch).
   final double topPadding;
-  /// The callback function to execute when the theme toggle button is pressed.
   final VoidCallback onToggleTheme;
 
-  /// Creates the header delegate.
   _HeaderDelegate({
     required this.streakCount,
     required this.activeDates,
@@ -325,49 +291,52 @@ class _HeaderDelegate extends SliverPersistentHeaderDelegate {
           duration: const Duration(milliseconds: 200),
           height: maxExtent,
           decoration: BoxDecoration(
-            // Standardized to use .withValues() for consistency
             color: theme.scaffoldBackgroundColor.withValues(alpha: isScrolled ? 0.95 : 1.0),
             boxShadow: isScrolled
                 ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 3))]
                 : null,
           ),
-          padding: EdgeInsets.only(top: topPadding + 4, left: 24, right: 16, bottom: 8),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                'Krono',
-                style: theme.textTheme.headlineLarge?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -1.5,
-                  fontSize: 32,
-                ),
+          // ✅ FIX: Folosește SafeArea pentru a gestiona automat topPadding
+          child: SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 24, right: 16, bottom: 8, top: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    'Krono',
+                    style: theme.textTheme.headlineLarge?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -1.5,
+                      fontSize: 32,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: onToggleTheme,
+                    icon: Icon(
+                      themeMode == ThemeMode.light ? Icons.wb_sunny_rounded : Icons.nightlight_round,
+                      color: themeMode == ThemeMode.light ? Colors.orange : Colors.indigo[200],
+                    ),
+                  ),
+                  StreakCard(streak: streakCount, activeDates: activeDates),
+                ],
               ),
-              const Spacer(),
-              IconButton(
-                onPressed: onToggleTheme,
-                icon: Icon(
-                  themeMode == ThemeMode.light ? Icons.wb_sunny_rounded : Icons.nightlight_round,
-                  color: themeMode == ThemeMode.light ? Colors.orange : Colors.indigo[200],
-                ),
-              ),
-              StreakCard(streak: streakCount, activeDates: activeDates),
-            ],
+            ),
           ),
         );
       },
     );
   }
 
-  /// The maximum height of the header, including safe area padding.
+  // ✅ FIX: Înălțimea corectată - doar conținutul vizibil (60px) fără topPadding duplicat
   @override
-  double get maxExtent => 60 + topPadding;
+  double get maxExtent => 60.0 + topPadding;
 
-  /// The minimum height of the header, which is the same as the max height.
   @override
-  double get minExtent => 60 + topPadding;
+  double get minExtent => 60.0 + topPadding;
 
-  /// Determines if the header should rebuild when its properties change.
   @override
   bool shouldRebuild(covariant _HeaderDelegate oldDelegate) {
     return oldDelegate.streakCount != streakCount ||

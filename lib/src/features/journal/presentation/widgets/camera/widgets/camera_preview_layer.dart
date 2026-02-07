@@ -74,41 +74,45 @@ class CameraPreviewLayer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    // Enforce a 3:4 aspect ratio, which is the standard format for photography.
     final targetHeight = screenWidth / (3 / 4);
 
     return Align(
-      // Slightly offset upwards (-0.15) to reserve space for bottom controls.
       alignment: const Alignment(0, -0.15),
       child: SizedBox(
         width: screenWidth,
         height: targetHeight,
         child: ClipRect(
           child: LayoutBuilder(builder: (context, constraints) {
-            final isCameraReady =
-                controller != null && controller!.value.isInitialized;
+            final isCameraReady = controller != null &&
+                controller!.value.isInitialized &&
+                !controller!.value.isRecordingVideo;
 
             return Stack(
               fit: StackFit.expand,
               children: [
                 // Layer 1: Camera Preview Stream
                 if (isCameraReady)
-                  FittedBox(
-                    fit: BoxFit.cover,
-                    child: SizedBox(
-                      width: constraints.maxWidth,
-                      // Use the actual aspect ratio of the camera sensor to prevent distortion.
-                      height:
-                      constraints.maxWidth * controller!.value.aspectRatio,
-                      child: Transform(
-                        alignment: Alignment.center,
-                        transform: Matrix4.identity(),
+                // OPTIMIZATION: RepaintBoundary isolates the heavy texture rendering
+                  RepaintBoundary(
+                    child: FittedBox(
+                      fit: BoxFit.cover,
+                      child: SizedBox(
+                        width: constraints.maxWidth,
+                        height: constraints.maxWidth * controller!.value.aspectRatio,
                         child: CameraPreview(controller!),
                       ),
                     ),
                   )
                 else
-                  Container(color: Colors.black),
+                  Container(
+                    color: Colors.black,
+                    child: const Center(
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    ),
+                  ),
 
                 // Layer 2: Gesture Detector (Zoom, Focus)
                 if (isCameraReady)
@@ -124,9 +128,12 @@ class CameraPreviewLayer extends StatelessWidget {
                 // Layer 3: Grid Overlay
                 if (isGridEnabled)
                   IgnorePointer(
-                    child: CustomPaint(
-                      size: Size.infinite,
-                      painter: GridPainter(),
+                    // OPTIMIZATION: RepaintBoundary for static grid
+                    child: RepaintBoundary(
+                      child: CustomPaint(
+                        size: Size.infinite,
+                        painter: GridPainter(),
+                      ),
                     ),
                   ),
 
@@ -159,8 +166,9 @@ class CameraPreviewLayer extends StatelessWidget {
                         focusPoint!.dy > constraints.maxHeight * 0.85;
                     return Positioned(
                       left: focusPoint!.dx - 55,
-                      top:
-                      showAbove ? focusPoint!.dy - 80 : focusPoint!.dy + 55,
+                      top: showAbove
+                          ? focusPoint!.dy - 80
+                          : focusPoint!.dy + 55,
                       child: ScaleTransition(
                         scale: focusScaleAnimation!,
                         child: SizedBox(

@@ -80,6 +80,24 @@ class _JournalItemCardState extends State<JournalItemCard> {
     return _emojiCache[idx];
   }
 
+  /// Navigates to a screen using a snappy fade transition (consistent with AddButton).
+  void _navigateTo(Widget page) {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => page,
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(
+            opacity: animation,
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 150),
+        reverseTransitionDuration: const Duration(milliseconds: 120),
+      ),
+    );
+  }
+
   /// Handles the tap gesture on the card, routing to the appropriate action.
   ///
   /// If the day has no entries, it navigates to the add entry screen.
@@ -97,10 +115,7 @@ class _JournalItemCardState extends State<JournalItemCard> {
     } else {
       final main = widget.dayEntries.first;
       Logger.info('Tapped card with single entry, navigating to detail screen for entry ID: ${main.id}');
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => EntryDetailScreen(entry: main)),
-      );
+      _navigateTo(EntryDetailScreen(entry: main));
     }
   }
 
@@ -121,15 +136,15 @@ class _JournalItemCardState extends State<JournalItemCard> {
       return;
     }
     Logger.info('Navigating to add entry screen for date: ${widget.date}');
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => AddEntryScreen(initialDate: widget.date)),
-    );
+    _navigateTo(AddEntryScreen(initialDate: widget.date));
   }
 
   /// Displays a modal bottom sheet with a grid of all entries for the selected day.
   ///
   /// This is triggered when a user taps a card that represents a day with more
   /// than one [JournalEntry].
+  ///
+  /// Uses [DraggableScrollableSheet] to allow swipe-to-dismiss even when scrolled to top.
   void _showMultipleEntriesModal() {
     final l10n = AppLocalizations.of(context)!;
     final locale = Localizations.localeOf(context).languageCode;
@@ -142,42 +157,75 @@ class _JournalItemCardState extends State<JournalItemCard> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black.withAlpha(140),
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.72,
-        decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-        child: Column(
-          children: [
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: Theme.of(context).colorScheme.onSurface.withAlpha(51), borderRadius: BorderRadius.circular(2))),
-            const Gap(20),
-            Text(l10n.memoriesFrom(rawDate), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: -0.5)),
-            const Gap(20),
-            Expanded(
-              child: GridView.builder(
-                physics: const BouncingScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2, crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 0.8,
+      builder: (context) {
+        final sheetController = DraggableScrollableController();
+
+        return DraggableScrollableSheet(
+          controller: sheetController,
+          initialChildSize: 0.72,
+          minChildSize: 0.4,
+          maxChildSize: 0.9,
+          expand: false,
+          snap: true,
+          snapSizes: const [0.72],
+          builder: (context, scrollController) {
+            return NotificationListener<DraggableScrollableNotification>(
+              onNotification: (notification) {
+                return false;
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
                 ),
-                itemCount: sortedEntries.length,
-                itemBuilder: (context, index) {
-                  final entry = sortedEntries[index];
-                  return GestureDetector(
-                    onTap: () {
-                      Logger.info('Selected entry ID ${entry.id} from multi-entry modal.');
-                      Navigator.pop(context);
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => EntryDetailScreen(entry: entry)));
-                    },
-                    child: _buildModalCard(entry),
-                  );
-                },
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.onSurface.withAlpha(51),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const Gap(20),
+                    Text(
+                      l10n.memoriesFrom(rawDate),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: -0.5),
+                    ),
+                    const Gap(20),
+                    Expanded(
+                      child: GridView.builder(
+                        controller: scrollController,
+                        physics: const ClampingScrollPhysics(),
+                        padding: const EdgeInsets.only(bottom: 20),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                          childAspectRatio: 0.75,
+                        ),
+                        itemCount: sortedEntries.length,
+                        itemBuilder: (context, index) {
+                          final entry = sortedEntries[index];
+                          return GestureDetector(
+                            onTap: () {
+                              Logger.info('Selected entry ID ${entry.id} from multi-entry modal.');
+                              _navigateTo(EntryDetailScreen(entry: entry));
+                            },
+                            child: _buildModalCard(entry),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
-      ),
+            );
+          },
+        );
+      },
     );
   }
 

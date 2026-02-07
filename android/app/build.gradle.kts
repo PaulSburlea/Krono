@@ -64,12 +64,17 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // Default name for release
+            resValue("string", "app_name", "Krono")
         }
 
         debug {
-            // ✅ FIX: Folosim cheia de release și pentru debug.
-            // Asta previne dezinstalarea aplicației (și ștergerea datelor)
-            // când treci de la un mod la altul.
+            // This creates a separate package: com.krono.app.debug
+            applicationIdSuffix = ".debug"
+
+            // This allows you to see "Krono Dev" on your home screen
+            resValue("string", "app_name", "Krono Dev")
+
             signingConfig = signingConfigs.getByName("release")
         }
     }
